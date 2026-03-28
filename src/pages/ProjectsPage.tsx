@@ -6,9 +6,9 @@ import { useProjects } from '../hooks/useProjects.ts';
 
 export default function ProjectsPage() {
   const { projects, addProject } = useProjects();
-  const [showModal, setShowModal] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [showModal,    setShowModal]    = useState(false);
+  const [title,        setTitle]        = useState('');
+  const [description,  setDescription]  = useState('');
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,59 +19,86 @@ export default function ProjectsPage() {
     setShowModal(false);
   }
 
+  function handleClose() {
+    setTitle('');
+    setDescription('');
+    setShowModal(false);
+  }
+
   return (
-    <div>
-      {/* Header — only show "New Project" button when projects exist */}
+    <div className="animate-fade-up">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="font-display text-[3.5rem] font-bold text-on-surface">Projects</h1>
+        <div>
+          <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Projects</h1>
+          <p className="font-body text-sm text-on-surface/40 mt-1">
+            {projects.length > 0
+              ? `${projects.length} project${projects.length !== 1 ? 's' : ''}`
+              : 'Organize your work into projects'}
+          </p>
+        </div>
         {projects.length > 0 && (
-          <Button onClick={() => setShowModal(true)}>+ New Project</Button>
+          <Button onClick={() => setShowModal(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New Project
+          </Button>
         )}
       </div>
 
+      {/* Empty state */}
       {projects.length === 0 ? (
-        <div className="bg-surface-container-low rounded-2xl p-16 text-center">
-          <svg
-            className="w-12 h-12 mx-auto mb-4 text-on-surface/20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
-          </svg>
-          <p className="font-display text-[1.75rem] font-bold text-on-surface mb-2">No projects yet</p>
-          <p className="font-body text-base text-on-surface/50 mb-6">
-            Create your first project to start tracking time.
+        <div className="bg-surface-container-low rounded-2xl p-16 text-center animate-fade-up stagger-1">
+          <div className="w-14 h-14 rounded-2xl bg-surface-container mx-auto mb-5 flex items-center justify-center">
+            <svg className="text-on-surface/20" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+            </svg>
+          </div>
+          <h2 className="font-display text-xl font-bold text-on-surface mb-2">No projects yet</h2>
+          <p className="font-body text-sm text-on-surface/45 mb-7 max-w-xs mx-auto leading-relaxed">
+            Create your first project to start tracking your time and tasks.
           </p>
-          <Button onClick={() => setShowModal(true)}>Create Project</Button>
+          <Button onClick={() => setShowModal(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Create Project
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {projects.map((project, i) => (
+            <ProjectCard key={project.id} project={project} index={i} />
           ))}
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
           <div
             className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
+            onClick={handleClose}
           />
-          <div className="relative bg-surface/90 backdrop-blur-[20px] rounded-2xl p-8 w-full max-w-md
-            shadow-[0px_32px_64px_rgba(26,28,28,0.12)]">
-            <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-6">New Project</h2>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-md
+            shadow-[0_24px_60px_rgba(26,28,28,0.14)] animate-scale-in">
+            <h2 id="modal-title" className="font-display text-xl font-bold text-on-surface mb-5">New Project</h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <Input
                 label="Title"
-                placeholder="Project title"
+                placeholder="e.g. Website Redesign"
                 value={title}
-                onChange={(val) => setTitle(val)}
+                onChange={setTitle}
+                autoFocus
               />
-              <div>
-                <label className="font-body text-xs font-medium tracking-wide uppercase text-on-surface/70 mb-2 block">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/50">
                   Description
                 </label>
                 <textarea
@@ -79,14 +106,14 @@ export default function ProjectsPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="bg-surface-container-lowest rounded-lg px-4 py-3 font-body text-base text-on-surface
-                    outline-none border-b-2 border-transparent focus:border-primary transition-colors w-full
-                    placeholder:text-on-surface/40 resize-none"
+                  className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
+                    outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
+                    transition-all duration-200 placeholder:text-on-surface/30 resize-none"
                 />
               </div>
-              <div className="flex items-center gap-3 pt-1">
-                <Button type="submit">Create Project</Button>
-                <Button variant="ghost" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button type="submit" disabled={!title.trim()}>Create Project</Button>
+                <Button variant="ghost" type="button" onClick={handleClose}>Cancel</Button>
               </div>
             </form>
           </div>

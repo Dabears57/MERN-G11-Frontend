@@ -16,28 +16,31 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const base =
-    'rounded-lg font-body font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-2 rounded-xl font-body font-medium ' +
+    'transition-all duration-200 cursor-pointer ' +
+    'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none';
 
-  const sizes = {
-    md: 'px-6 py-3 text-base',
-    sm: 'px-4 py-2 text-sm',
+  const sizes: Record<string, string> = {
+    md: 'px-5 py-2.5 text-sm',
+    sm: 'px-3.5 py-2 text-xs',
   };
 
-  const variants = {
+  const variants: Record<string, string> = {
     primary:
-      'bg-gradient-to-br from-primary to-primary-container text-on-primary hover:brightness-110',
+      'bg-primary text-white hover:bg-primary-container active:scale-[0.98] shadow-[0_1px_3px_rgba(0,77,68,0.25)]',
     secondary:
-      'bg-secondary-container text-on-secondary-container hover:bg-surface-container-highest',
+      'bg-surface-container text-on-surface hover:bg-surface-container-highest active:scale-[0.98]',
     ghost:
-      'bg-transparent text-primary hover:bg-surface-container-low',
+      'bg-transparent text-primary hover:bg-primary/8 active:scale-[0.98]',
     danger:
-      'bg-red-600/10 text-red-600 hover:bg-red-600/20',
+      'bg-red-500/10 text-red-600 hover:bg-red-500/18 active:scale-[0.98]',
   };
-
-  const width = fullWidth ? 'w-full' : '';
 
   return (
-    <button className={`${base} ${sizes[size]} ${variants[variant]} ${width} ${className}`} {...props}>
+    <button
+      className={`${base} ${sizes[size]} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );

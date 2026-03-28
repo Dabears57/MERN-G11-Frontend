@@ -2,43 +2,42 @@ import { useState, useEffect } from 'react';
 import StatCard from '../components/StatCard.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
 import Button from '../components/Button.tsx';
+import Input from '../components/Input.tsx';
 import { useProjects } from '../hooks/useProjects.ts';
 import { useTimer } from '../hooks/useTimer.ts';
 import { MOCK_SESSIONS, computeSessionStats } from '../data/mock.ts';
 import type { TaskTimeEntry } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
+  const h   = Math.floor(s / 3600);
+  const m   = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`;
   return `${m}m ${sec.toString().padStart(2, '0')}s`;
 }
 
-type SessionMode = 'list' | 'focus';
+type SessionMode  = 'list' | 'focus';
 type TaskTimeState = Record<string, { accumulated: number; startedAt: number | null }>;
 
 export default function SessionsPage() {
   const { projects, getProject, addTask } = useProjects();
   const { elapsed, isRunning, formattedTime, start, pause, reset } = useTimer();
 
-  const [mode, setMode] = useState<SessionMode>('list');
-  const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [pickerProjectId, setPickerProjectId] = useState(projects[0]?.id ?? '');
-  const [activeProjectId, setActiveProjectId] = useState('');
-  const [taskTimes, setTaskTimes] = useState<TaskTimeState>({});
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [summaryElapsed, setSummaryElapsed] = useState(0);
-  const [summaryData, setSummaryData] = useState<TaskTimeEntry[]>([]);
+  const [mode,               setMode]               = useState<SessionMode>('list');
+  const [showProjectPicker,  setShowProjectPicker]  = useState(false);
+  const [pickerProjectId,    setPickerProjectId]    = useState(projects[0]?.id ?? '');
+  const [activeProjectId,    setActiveProjectId]    = useState('');
+  const [taskTimes,          setTaskTimes]          = useState<TaskTimeState>({});
+  const [activeTaskId,       setActiveTaskId]       = useState<string | null>(null);
+  const [showSummary,        setShowSummary]        = useState(false);
+  const [summaryElapsed,     setSummaryElapsed]     = useState(0);
+  const [summaryData,        setSummaryData]        = useState<TaskTimeEntry[]>([]);
+  const [showAddTask,        setShowAddTask]        = useState(false);
+  const [newTaskName,        setNewTaskName]        = useState('');
+  const [newTaskDesc,        setNewTaskDesc]        = useState('');
 
-  // Inline task creation in focus mode
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskDesc, setNewTaskDesc] = useState('');
-
-  const activeProject = getProject(activeProjectId);
-  const sessionStats = computeSessionStats(MOCK_SESSIONS);
+  const activeProject  = getProject(activeProjectId);
+  const sessionStats   = computeSessionStats(MOCK_SESSIONS);
 
   function getTaskElapsed(taskId: string): number {
     const entry = taskTimes[taskId];
@@ -107,7 +106,7 @@ export default function SessionsPage() {
         startedAt: null,
       };
     }
-    const project = getProject(activeProjectId);
+    const project  = getProject(activeProjectId);
     const summary: TaskTimeEntry[] = project?.tasks.map((t) => ({
       taskId: t.id,
       taskName: t.name,
@@ -132,14 +131,12 @@ export default function SessionsPage() {
     e.preventDefault();
     if (!newTaskName.trim()) return;
     addTask(activeProjectId, newTaskName.trim(), newTaskDesc.trim());
-    // Also init timer entry for the new task (it will be added via re-render via useProjects)
     setNewTaskName('');
     setNewTaskDesc('');
     setShowAddTask(false);
   }
 
-  // When a new task is added to the active project during focus mode,
-  // initialize its timer entry so it appears in the summary correctly.
+  // Initialize timer state for any newly added tasks in focus mode
   useEffect(() => {
     if (mode !== 'focus' || !activeProject) return;
     const hasNew = activeProject.tasks.some((t) => !(t.id in taskTimes));
@@ -147,9 +144,7 @@ export default function SessionsPage() {
     setTaskTimes((prev) => {
       const next = { ...prev };
       for (const task of activeProject.tasks) {
-        if (!(task.id in next)) {
-          next[task.id] = { accumulated: 0, startedAt: null };
-        }
+        if (!(task.id in next)) next[task.id] = { accumulated: 0, startedAt: null };
       }
       return next;
     });
@@ -162,100 +157,121 @@ export default function SessionsPage() {
 
   return (
     <>
-      {/* Sessions List */}
-      <div className={mode === 'focus' ? 'invisible pointer-events-none' : ''}>
+      {/* ── Sessions list view ── */}
+      <div className={mode === 'focus' ? 'invisible pointer-events-none' : 'animate-fade-up'}>
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-[3.5rem] font-bold text-on-surface leading-tight">Sessions</h1>
-            <p className="font-body text-base text-on-surface/50 mt-1">
+            <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Sessions</h1>
+            <p className="font-body text-sm text-on-surface/40 mt-1.5">
               Track your focus time, one session at a time.
             </p>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <Button onClick={openProjectPicker} disabled={projects.length === 0}>
-              ▶ Start New Session
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              Start Session
             </Button>
             {projects.length === 0 && (
-              <p className="font-body text-xs text-on-surface/40">Create a project first</p>
+              <p className="font-body text-xs text-on-surface/35">Create a project first</p>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        {/* Stat cards */}
+        <div className="grid grid-cols-3 gap-4 mb-8 stagger-1 animate-fade-up">
           {sessionStats.map((stat) => (
             <StatCard key={stat.label} {...stat} />
           ))}
         </div>
 
-        <div>
+        {/* Session log */}
+        <div className="stagger-2 animate-fade-up">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-[1.75rem] font-bold text-on-surface">Recent Sessions</h2>
-            <span className="font-body text-xs text-on-surface/40 uppercase tracking-wide">Last 30 days</span>
+            <h2 className="font-display text-xl font-bold text-on-surface">Recent Sessions</h2>
+            <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
           </div>
+
           {MOCK_SESSIONS.length > 0 ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               {MOCK_SESSIONS.map((session, i) => (
                 <SessionLogItem key={session.id} session={session} index={i} />
               ))}
             </div>
           ) : (
             <div className="bg-surface-container-low rounded-2xl p-12 text-center">
-              <p className="font-body text-on-surface/50">No sessions yet. Start your first session above.</p>
+              <div className="w-12 h-12 rounded-2xl bg-surface-container mx-auto mb-4 flex items-center justify-center">
+                <svg className="text-on-surface/20" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <circle cx="12" cy="13" r="8" />
+                  <polyline points="12 9 12 13 15 15" />
+                  <path d="M9 3h6" /><line x1="12" y1="3" x2="12" y2="5" />
+                </svg>
+              </div>
+              <p className="font-body text-sm text-on-surface/40 leading-relaxed">
+                No sessions recorded yet.<br />Start your first session above.
+              </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ─── FOCUS MODE OVERLAY ─── */}
+      {/* ── Focus mode overlay ── */}
       {mode === 'focus' && (
-        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col">
-
-          {/* Slim top bar — project name only */}
-          <div className="px-8 pt-5 pb-3 flex items-center justify-between border-b border-on-primary/5">
-            <p className="font-display text-base font-bold text-primary">{activeProject?.title ?? 'Session'}</p>
-            <span className="font-body text-[0.65rem] text-on-primary/30 uppercase tracking-widest">
+        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col animate-fade-in">
+          {/* Top bar */}
+          <div className="px-8 pt-5 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
+              <p className="font-display text-sm font-bold text-white/80">{activeProject?.title ?? 'Session'}</p>
+            </div>
+            <span className="font-body text-[0.6rem] text-white/25 uppercase tracking-[0.12em]">
               Focus Mode
             </span>
           </div>
+          <div className="mx-8 h-px bg-white/6" />
 
-          {/* CENTER — timer + controls */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8">
-            {/* Live/Paused badge */}
-            <div className="flex items-center gap-1.5">
+          {/* Timer */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8">
+            {/* Status */}
+            <div className="h-5 flex items-center">
               {isRunning ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="font-body text-xs tracking-widest text-primary uppercase">Live</span>
-                </>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
+                  <span className="font-body text-xs tracking-[0.12em] text-primary uppercase">Live</span>
+                </div>
               ) : (
-                <span className="font-body text-xs tracking-widest text-on-primary/30 uppercase">Paused</span>
+                <span className="font-body text-xs tracking-[0.12em] text-white/25 uppercase">Paused</span>
               )}
             </div>
 
-            {/* Big timer */}
-            <p className="font-display font-bold text-on-primary leading-none tabular-nums"
-              style={{ fontSize: 'clamp(3.5rem, 10vw, 7rem)' }}>
+            {/* Big clock */}
+            <p
+              className="font-display font-bold text-white leading-none tabular-nums"
+              style={{ fontSize: 'clamp(3.5rem, 11vw, 7.5rem)' }}
+            >
               {formattedTime}
             </p>
 
-            {/* Controls — centered below timer */}
-            <div className="flex items-center gap-3 mt-2">
+            {/* Controls */}
+            <div className="flex items-center gap-3 mt-1">
               <button
                 onClick={isRunning ? handlePauseSession : start}
-                className="flex items-center gap-2 rounded-xl px-6 py-3 font-body text-sm font-medium
-                  bg-on-primary/8 text-on-primary/80 hover:bg-on-primary/15 hover:text-on-primary
-                  transition-all duration-150 cursor-pointer border border-on-primary/15"
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 font-body text-sm font-medium
+                  bg-white/8 text-white/70 hover:bg-white/14 hover:text-white
+                  transition-all duration-150 cursor-pointer border border-white/10"
               >
                 {isRunning ? (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
                     </svg>
                     Pause
                   </>
                 ) : (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                     Resume
@@ -264,11 +280,11 @@ export default function SessionsPage() {
               </button>
               <button
                 onClick={handleEndSession}
-                className="flex items-center gap-2 rounded-xl px-6 py-3 font-body text-sm font-medium
-                  bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300
-                  transition-all duration-150 cursor-pointer border border-red-500/20"
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 font-body text-sm font-medium
+                  bg-red-500/12 text-red-400 hover:bg-red-500/20 hover:text-red-300
+                  transition-all duration-150 cursor-pointer border border-red-500/15"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                 </svg>
                 End Session
@@ -276,54 +292,56 @@ export default function SessionsPage() {
             </div>
           </div>
 
-          {/* TASKS section */}
+          {/* Tasks panel */}
           <div className="px-8 pb-8 w-full max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-3">
-              <p className="font-body text-xs uppercase tracking-widest text-on-primary/40">Tasks</p>
+              <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Tasks</p>
               <button
                 onClick={() => setShowAddTask((v) => !v)}
-                className="font-body text-xs text-primary/70 hover:text-primary transition-colors cursor-pointer
-                  flex items-center gap-1"
+                className="font-body text-xs text-primary/60 hover:text-primary
+                  transition-colors cursor-pointer flex items-center gap-1"
               >
-                + Add Task
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add Task
               </button>
             </div>
 
-            {/* Inline add-task form */}
             {showAddTask && (
-              <form onSubmit={handleAddTaskInFocus} className="mb-3 bg-on-primary/5 rounded-xl px-5 py-4 flex flex-col gap-3">
+              <form onSubmit={handleAddTaskInFocus} className="mb-3 bg-white/5 rounded-xl px-4 py-4 flex flex-col gap-3">
                 <input
                   autoFocus
                   placeholder="Task name"
                   value={newTaskName}
                   onChange={(e) => setNewTaskName(e.target.value)}
-                  className="bg-on-primary/10 rounded-lg px-4 py-2.5 font-body text-sm text-on-primary
-                    placeholder:text-on-primary/30 outline-none border-b-2 border-transparent
-                    focus:border-primary transition-colors w-full"
+                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
+                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                    focus:ring-primary/40 transition-all w-full"
                 />
                 <input
                   placeholder="Description (optional)"
                   value={newTaskDesc}
                   onChange={(e) => setNewTaskDesc(e.target.value)}
-                  className="bg-on-primary/10 rounded-lg px-4 py-2.5 font-body text-sm text-on-primary
-                    placeholder:text-on-primary/30 outline-none border-b-2 border-transparent
-                    focus:border-primary transition-colors w-full"
+                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
+                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                    focus:ring-primary/40 transition-all w-full"
                 />
                 <div className="flex items-center gap-2">
                   <button
                     type="submit"
                     disabled={!newTaskName.trim()}
-                    className="rounded-lg px-4 py-2 font-body text-xs font-medium cursor-pointer
-                      bg-primary text-on-primary hover:brightness-110 transition-all
-                      disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="rounded-lg px-4 py-2 font-body text-xs font-semibold cursor-pointer
+                      bg-primary text-white hover:bg-primary-container transition-all
+                      disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
                   >
-                    Add Task
+                    Add
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowAddTask(false); setNewTaskName(''); setNewTaskDesc(''); }}
-                    className="rounded-lg px-4 py-2 font-body text-xs text-on-primary/50
-                      hover:text-on-primary/80 transition-colors cursor-pointer"
+                    className="rounded-lg px-4 py-2 font-body text-xs text-white/40
+                      hover:text-white/70 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -334,22 +352,27 @@ export default function SessionsPage() {
             {activeProject && activeProject.tasks.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {activeProject.tasks.map((task) => {
-                  const isActive = activeTaskId === task.id;
+                  const isActive    = activeTaskId === task.id;
                   const taskElapsed = getTaskElapsed(task.id);
                   return (
                     <div
                       key={task.id}
-                      className={`flex items-center justify-between rounded-xl px-5 py-4 transition-all duration-200 ${
-                        isActive ? 'bg-primary/15 ring-1 ring-primary/30' : 'bg-on-primary/5'
+                      className={`flex items-center justify-between rounded-xl px-4 py-3.5 transition-all duration-200 ${
+                        isActive ? 'bg-primary/18 ring-1 ring-primary/30' : 'bg-white/5'
                       }`}
                     >
-                      <div>
-                        <p className="font-body text-sm font-medium text-on-primary">{task.name}</p>
-                        {task.description && (
-                          <p className="font-body text-xs text-on-primary/40 mt-0.5">{task.description}</p>
-                        )}
+                      <div className="flex items-center gap-3 min-w-0">
+                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot shrink-0" />}
+                        <div className="min-w-0">
+                          <p className={`font-body text-sm font-medium truncate ${isActive ? 'text-white' : 'text-white/60'}`}>
+                            {task.name}
+                          </p>
+                          {task.description && (
+                            <p className="font-body text-xs text-white/25 mt-0.5 truncate">{task.description}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-3 shrink-0 ml-4">
                         <span className="font-body text-sm text-primary/70 tabular-nums min-w-[4.5rem] text-right">
                           {formatSeconds(taskElapsed)}
                         </span>
@@ -357,7 +380,7 @@ export default function SessionsPage() {
                           <button
                             onClick={handleStopTask}
                             className="rounded-lg px-3 py-1.5 font-body text-xs cursor-pointer
-                              bg-on-primary/10 text-on-primary/60 hover:bg-on-primary/20 transition-colors"
+                              bg-white/8 text-white/50 hover:bg-white/14 hover:text-white/80 transition-all"
                           >
                             Stop
                           </button>
@@ -365,7 +388,7 @@ export default function SessionsPage() {
                           <button
                             onClick={() => handleStartTask(task.id)}
                             className="rounded-lg px-3 py-1.5 font-body text-xs cursor-pointer
-                              bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                              bg-primary/20 text-primary hover:bg-primary/30 transition-all"
                           >
                             Start
                           </button>
@@ -376,9 +399,9 @@ export default function SessionsPage() {
                 })}
               </div>
             ) : !showAddTask ? (
-              <div className="bg-on-primary/5 rounded-xl px-5 py-5 text-center">
-                <p className="font-body text-sm text-on-primary/30">
-                  No tasks yet — add one above to start tracking.
+              <div className="bg-white/4 rounded-xl px-4 py-5 text-center">
+                <p className="font-body text-sm text-white/25">
+                  No tasks yet — add one above to track time per task.
                 </p>
               </div>
             ) : null}
@@ -386,73 +409,71 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Project Picker Modal */}
+      {/* ── Project picker modal ── */}
       {showProjectPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm"
-            onClick={() => setShowProjectPicker(false)}
-          />
-          <div className="relative bg-surface/90 backdrop-blur-[20px] rounded-2xl p-8 w-full max-w-sm
-            shadow-[0px_24px_48px_rgba(26,28,28,0.12)]">
-            <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1">Choose a Project</h2>
-            <p className="font-body text-sm text-on-surface/50 mb-6">Select the project for this session</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+          <div className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm" onClick={() => setShowProjectPicker(false)} />
+          <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-sm
+            shadow-[0_24px_48px_rgba(26,28,28,0.14)] animate-scale-in">
+            <h2 id="picker-title" className="font-display text-xl font-bold text-on-surface mb-1">Choose Project</h2>
+            <p className="font-body text-sm text-on-surface/45 mb-5">Select the project for this session</p>
 
-            <label className="font-body text-xs font-medium tracking-wide uppercase text-on-surface/70 mb-2 block">
-              Project
-            </label>
-            <select
-              value={pickerProjectId}
-              onChange={(e) => setPickerProjectId(e.target.value)}
-              className="bg-surface-container-lowest rounded-lg px-4 py-3 font-body text-base text-on-surface
-                outline-none border-b-2 border-transparent focus:border-primary transition-colors w-full
-                cursor-pointer mb-6"
-            >
+            <div className="flex flex-col gap-1.5 mb-6 max-h-60 overflow-y-auto">
               {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.title}</option>
+                <button
+                  key={p.id}
+                  onClick={() => setPickerProjectId(p.id)}
+                  className={`w-full text-left px-4 py-3 rounded-xl font-body text-sm font-medium
+                    transition-all duration-150 cursor-pointer ${
+                      pickerProjectId === p.id
+                        ? 'bg-primary/12 text-primary ring-1 ring-primary/25'
+                        : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                    }`}
+                >
+                  {p.title}
+                </button>
               ))}
-            </select>
+            </div>
 
-            <div className="flex items-center gap-3">
-              <Button onClick={handleBeginSession} disabled={!pickerProjectId}>
-                Begin Session
-              </Button>
+            <div className="flex items-center gap-2.5">
+              <Button onClick={handleBeginSession} disabled={!pickerProjectId}>Begin Session</Button>
               <Button variant="ghost" onClick={() => setShowProjectPicker(false)}>Cancel</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Session Summary Modal */}
+      {/* ── Session summary modal ── */}
       {showSummary && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-on-surface/70 backdrop-blur-sm">
-          <div className="bg-surface rounded-2xl p-8 w-full max-w-md
-            shadow-[0px_24px_60px_rgba(26,28,28,0.24)]">
-            <p className="font-body text-xs uppercase tracking-widest text-primary mb-1">Complete</p>
-            <h2 className="font-display text-2xl font-bold text-on-surface mb-1">Session Complete</h2>
-            <p className="font-display text-[3rem] font-bold text-on-surface leading-none mb-6">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-on-surface/70 backdrop-blur-sm animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+          <div className="bg-surface rounded-2xl p-7 w-full max-w-md shadow-[0_24px_60px_rgba(26,28,28,0.24)] animate-scale-in">
+            <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-primary mb-1">Complete</p>
+            <h2 id="summary-title" className="font-display text-xl font-bold text-on-surface mb-1">Session Complete</h2>
+            <p className="font-display text-[3rem] font-bold text-on-surface leading-none mb-6 tabular-nums">
               {formatSeconds(summaryElapsed)}
             </p>
 
-            <div className="bg-surface-container-highest h-px mb-5" />
+            <div className="h-px bg-surface-container-highest mb-5" />
 
-            <p className="font-body text-xs uppercase tracking-widest text-on-surface/50 mb-3">Time per task</p>
+            <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-on-surface/40 mb-3">
+              Time per task
+            </p>
             <div className="flex flex-col gap-2.5 mb-6">
               {summaryData.length > 0 ? (
                 summaryData.map((entry) => (
                   <div key={entry.taskId} className="flex items-center justify-between">
-                    <span className="font-body text-sm font-medium text-on-surface">{entry.taskName}</span>
-                    <span className="font-body text-sm text-primary tabular-nums">
+                    <span className="font-body text-sm text-on-surface">{entry.taskName}</span>
+                    <span className="font-body text-sm text-primary font-semibold tabular-nums">
                       {formatSeconds(entry.accumulated)}
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="font-body text-sm text-on-surface/40">No tasks were tracked.</p>
+                <p className="font-body text-sm text-on-surface/35">No tasks were tracked.</p>
               )}
             </div>
 
-            <Button variant="primary" fullWidth onClick={handleDone}>Done</Button>
+            <Button fullWidth onClick={handleDone}>Done</Button>
           </div>
         </div>
       )}

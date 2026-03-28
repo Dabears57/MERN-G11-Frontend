@@ -7,64 +7,77 @@ import { useProjects } from '../hooks/useProjects.ts';
 import { getUserName } from '../hooks/useAuth.ts';
 
 function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
   return 'Good evening';
 }
 
 export default function DashboardPage() {
   const { projects } = useProjects();
-  const userName = getUserName();
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
+  const userName     = getUserName();
+  const todayLabel   = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
   });
 
-  const stats = computeStats(MOCK_SESSIONS, projects.length);
+  const stats        = computeStats(MOCK_SESSIONS, projects.length);
   const heatmapCells = computeHeatmap(MOCK_SESSIONS);
 
   return (
-    <div>
-      <div className="mb-10">
-        <h1 className="font-display text-[3.5rem] font-bold text-on-surface leading-tight">
+    <div className="animate-fade-up">
+      {/* Greeting */}
+      <div className="mb-8">
+        <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">
           {getGreeting()}{userName ? `, ${userName}` : ''}
         </h1>
-        <p className="font-body text-base text-on-surface/50 mt-1">{todayLabel}</p>
+        <p className="font-body text-sm text-on-surface/40 mt-1.5">{todayLabel}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-4 mb-8 stagger-1 animate-fade-up">
         {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
 
-      <div className="grid grid-cols-[1fr_340px] gap-8">
-        <div className="min-w-0">
-          <ActivityHeatmap cells={heatmapCells} />
+      {/* Main grid: heatmap + sidebar */}
+      <div className="grid grid-cols-[1fr_272px] gap-6">
+        {/* Left column */}
+        <div className="min-w-0 flex flex-col gap-8">
+          <div className="stagger-2 animate-fade-up">
+            <ActivityHeatmap cells={heatmapCells} />
+          </div>
 
-          <div className="mt-10">
-            <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-4">
-              Recent Sessions
-            </h2>
+          {/* Recent Sessions */}
+          <div className="stagger-3 animate-fade-up">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl font-bold text-on-surface">Recent Sessions</h2>
+              <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
+            </div>
+
             {MOCK_SESSIONS.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {MOCK_SESSIONS.map((session, i) => (
                   <SessionLogItem key={session.id} session={session} index={i} />
                 ))}
               </div>
             ) : (
-              <div className="bg-surface-container-low rounded-xl p-8 text-center">
-                <p className="font-body text-on-surface/50">
-                  Start a session to begin logging your time.
+              <div className="bg-surface-container-low rounded-2xl p-10 text-center">
+                <div className="w-10 h-10 rounded-xl bg-surface-container mx-auto mb-3 flex items-center justify-center text-on-surface/20">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
+                  </svg>
+                </div>
+                <p className="font-body text-sm text-on-surface/40">
+                  No sessions yet. Start tracking your work time.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="min-w-0">
+        {/* Right column */}
+        <div className="min-w-0 stagger-4 animate-fade-up">
           <ActiveProjectsPanel projects={projects} />
         </div>
       </div>
