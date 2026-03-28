@@ -25,12 +25,13 @@ export async function loginUser(
 
 export async function createUser(
   email: string,
-  password: string
+  password: string,
+  firstName: string
 ): Promise<{ message?: string; error?: string }> {
   try {
     const response = await fetch(buildPath('api/user/create'), {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, firstName }),
       headers: { 'Content-Type': 'application/json' },
     });
 

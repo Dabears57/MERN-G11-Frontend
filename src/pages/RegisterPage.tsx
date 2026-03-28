@@ -6,6 +6,7 @@ import Button from '../components/Button.tsx';
 
 export default function RegisterPage() {
   const navigate          = useNavigate();
+  const [firstName,       setFirstName]       = useState('');
   const [email,           setEmail]           = useState('');
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,11 +17,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    if (!firstName.trim())            { setError('First name is required'); return; }
     if (password !== confirmPassword) { setError('Passwords do not match'); return; }
     if (password.length < 6)          { setError('Password must be at least 6 characters'); return; }
 
     setLoading(true);
-    const result = await createUser(email, password);
+    const result = await createUser(email, password, firstName.trim());
     setLoading(false);
     if (result.error) { setError(result.error); } else { navigate('/login'); }
   }
@@ -74,7 +76,8 @@ export default function RegisterPage() {
           <p className="font-body text-sm text-on-surface/40 mb-8">Get started with TimeTrack — it&apos;s free</p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <Input label="Email"            type="email"    placeholder="you@example.com"      value={email}           onChange={setEmail} />
+            <Input label="First Name"       type="text"     placeholder="Your first name"       value={firstName}       onChange={setFirstName} autoFocus />
+            <Input label="Email"            type="email"    placeholder="you@example.com"       value={email}           onChange={setEmail} />
             <Input label="Password"         type="password" placeholder="At least 6 characters" value={password}        onChange={setPassword} />
             <Input label="Confirm Password" type="password" placeholder="Repeat your password"  value={confirmPassword} onChange={setConfirmPassword} />
 
