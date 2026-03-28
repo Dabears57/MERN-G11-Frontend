@@ -1,32 +1,41 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginUser } from '../api/auth.ts';
-import { saveToken } from '../hooks/useAuth.ts';
+import { createUser } from '../api/auth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
 
 const FEATURES = ['Project tracking', 'Focus sessions', 'Time insights'];
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    const result = await loginUser(email, password);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    const result = await createUser(email, password);
     setLoading(false);
 
-    if (result.token) {
-      saveToken(result.token);
-      navigate('/dashboard');
+    if (result.error) {
+      setError(result.error);
     } else {
-      setError(result.error ?? 'Login failed');
+      navigate('/login');
     }
   }
 
@@ -40,7 +49,7 @@ export default function LoginPage() {
             TimeTrack
           </h1>
           <p className="font-body text-lg text-on-surface/60 mb-8">
-            Your editorial workspace for intentional productivity. Track time with precision and clarity.
+            Start tracking your productivity with precision. Create an account to get started.
           </p>
           <div className="flex flex-col gap-3">
             {FEATURES.map((f) => (
@@ -56,8 +65,8 @@ export default function LoginPage() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-8">
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
-          <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1">Welcome back</h2>
-          <p className="font-body text-sm text-on-surface/50 mb-10">Sign in to your account</p>
+          <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1">Create account</h2>
+          <p className="font-body text-sm text-on-surface/50 mb-10">Get started with TimeTrack</p>
 
           <div className="flex flex-col gap-6">
             <Input
@@ -70,24 +79,38 @@ export default function LoginPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="At least 6 characters"
               value={password}
               onChange={setPassword}
             />
+            <Input
+              label="Confirm Password"
+              type="password"
+              placeholder="Repeat your password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+            />
+          </div>
+
+          <div className="mt-5 bg-secondary-container rounded-xl px-4 py-3">
+            <p className="font-body text-xs text-on-secondary-container">
+              Email verification will be required to activate your account. You will receive a
+              confirmation email after registration.
+            </p>
           </div>
 
           {error && (
             <p className="font-body text-sm text-red-600 mt-4">{error}</p>
           )}
 
-          <Button type="submit" fullWidth className="mt-8" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" fullWidth className="mt-6" disabled={loading}>
+            {loading ? 'Creating account...' : 'Create Account'}
           </Button>
 
           <p className="font-body text-sm text-on-surface/50 text-center mt-6">
-            Don&apos;t have an account?{' '}
-            <Link to="/register" className="text-primary font-medium hover:underline">
-              Create one
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Sign in
             </Link>
           </p>
         </form>
