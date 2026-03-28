@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import StatCard from '../components/StatCard.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
 import Button from '../components/Button.tsx';
-import Input from '../components/Input.tsx';
 import { useProjects } from '../hooks/useProjects.ts';
 import { useTimer } from '../hooks/useTimer.ts';
 import { MOCK_SESSIONS, computeSessionStats } from '../data/mock.ts';
