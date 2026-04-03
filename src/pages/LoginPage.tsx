@@ -1,29 +1,49 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { loginUser } from '../api/auth.ts';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { loginUser, resendVerification } from '../api/auth.ts';
 import { saveToken } from '../hooks/useAuth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
 
 export default function LoginPage() {
   const navigate  = useNavigate();
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const location  = useLocation();
+  const passwordUpdated = (location.state as { passwordUpdated?: boolean } | null)?.passwordUpdated;
+
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [error,         setError]         = useState('');
+  const [loading,       setLoading]       = useState(false);
+  const [notVerified,   setNotVerified]   = useState(false);
+  const [resendEmail,   setResendEmail]   = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendStatus,  setResendStatus]  = useState<'idle' | 'sent' | 'error'>('idle');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setNotVerified(false);
     setLoading(true);
     const result = await loginUser(email, password);
     setLoading(false);
+
     if (result.token) {
       saveToken(result.token);
       navigate('/dashboard');
+    } else if (result.emailNotVerified) {
+      setNotVerified(true);
+      setResendEmail(email);
     } else {
       setError(result.error ?? 'Login failed');
     }
+  }
+
+  async function handleResend(e: React.FormEvent) {
+    e.preventDefault();
+    setResendLoading(true);
+    const result = await resendVerification(resendEmail);
+    setResendLoading(false);
+    setResendStatus(result.success ? 'sent' : 'error');
   }
 
   return (
@@ -74,13 +94,58 @@ export default function LoginPage() {
           <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Sign in</h2>
           <p className="font-body text-sm text-on-surface/40 mb-8">Enter your credentials to continue</p>
 
+          {passwordUpdated && (
+            <div className="bg-green-50 rounded-xl px-4 py-3 mb-5">
+              <p className="font-body text-sm text-green-700">Password updated — you can now sign in.</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input label="Email" type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
-            <Input label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} />
+
+            <div className="flex flex-col gap-1">
+              <Input label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} />
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="font-body text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
 
             {error && (
               <div className="bg-red-50 rounded-xl px-4 py-3">
                 <p className="font-body text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {notVerified && (
+              <div className="bg-amber-50 rounded-xl px-4 py-3 flex flex-col gap-3">
+                <p className="font-body text-sm text-amber-800">
+                  Your email isn&apos;t verified yet. Check your inbox for the verification link.
+                </p>
+                {resendStatus === 'sent' ? (
+                  <p className="font-body text-xs text-green-700">Verification email resent!</p>
+                ) : (
+                  <form onSubmit={handleResend} className="flex flex-col gap-2">
+                    <Input
+                      label="Resend to"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={resendEmail}
+                      onChange={setResendEmail}
+                    />
+                    {resendStatus === 'error' && (
+                      <p className="font-body text-xs text-red-600">Failed to resend. Try again.</p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={resendLoading}
+                      className="font-body text-xs text-primary hover:underline text-left disabled:opacity-50"
+                    >
+                      {resendLoading ? 'Sending…' : 'Resend verification email'}
+                    </button>
+                  </form>
+                )}
               </div>
             )}
 

@@ -12,6 +12,10 @@ import InsightsPage from './pages/InsightsPage.tsx';
 import InsightProjectPage from './pages/InsightProjectPage.tsx';
 import InsightSessionPage from './pages/InsightSessionPage.tsx';
 import AccountPage from './pages/AccountPage.tsx';
+import CheckEmailPage from './pages/CheckEmailPage.tsx';
+import EmailVerifyPage from './pages/EmailVerifyPage.tsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.tsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
 
 export default function App() {
   return (
@@ -20,6 +24,10 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/check-email" element={<CheckEmailPage />} />
+        <Route path="/verify" element={<EmailVerifyPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />

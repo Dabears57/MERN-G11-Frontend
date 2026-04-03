@@ -1,0 +1,118 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { requestPasswordReset } from '../api/auth.ts';
+import Input from '../components/Input.tsx';
+import Button from '../components/Button.tsx';
+
+export default function ForgotPasswordPage() {
+  const [email,   setEmail]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent,    setSent]    = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    await requestPasswordReset(email);
+    setLoading(false);
+    // Always show success — avoids leaking whether the email is registered
+    setSent(true);
+  }
+
+  return (
+    <div className="min-h-screen bg-surface flex">
+      {/* Left panel — brand */}
+      <div className="hidden lg:flex w-[42%] bg-on-surface flex-col justify-between p-12">
+        <div className="flex items-center gap-2">
+          <span className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            </svg>
+          </span>
+          <span className="font-display text-base font-bold text-white">TimeTrack</span>
+        </div>
+
+        <div>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+            Account recovery
+          </p>
+          <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
+            Reset your password.
+          </h1>
+          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+            We&apos;ll send you a link to choose a new password.
+          </p>
+        </div>
+
+        <p className="font-body text-xs text-white/20">
+          © {new Date().getFullYear()} TimeTrack
+        </p>
+      </div>
+
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center px-8 py-12 animate-fade-up">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-10 lg:hidden">
+            <span className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              </svg>
+            </span>
+            <span className="font-display text-base font-bold text-on-surface">TimeTrack</span>
+          </div>
+
+          {sent ? (
+            <div className="flex flex-col gap-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <polyline points="2,4 12,13 22,4" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Check your inbox</h2>
+                <p className="font-body text-sm text-on-surface/40">
+                  If that address is registered, you&apos;ll receive a reset link shortly.
+                </p>
+              </div>
+              <Link to="/login">
+                <Button fullWidth>Back to sign in</Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Forgot password?</h2>
+              <p className="font-body text-sm text-on-surface/40 mb-8">
+                Enter your email and we&apos;ll send you a reset link.
+              </p>
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={setEmail}
+                  autoFocus
+                />
+
+                <Button type="submit" fullWidth disabled={loading}>
+                  {loading ? 'Sending…' : 'Send reset link'}
+                </Button>
+              </form>
+
+              <p className="font-body text-sm text-on-surface/40 text-center mt-6">
+                Remember your password?{' '}
+                <Link to="/login" className="text-primary font-semibold hover:underline">
+                  Sign in
+                </Link>
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

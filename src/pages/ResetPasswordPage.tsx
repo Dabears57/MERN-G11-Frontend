@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { createUser } from '../api/auth.ts';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { resetPassword } from '../api/auth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
 
-export default function RegisterPage() {
-  const navigate          = useNavigate();
-  const [firstName,       setFirstName]       = useState('');
-  const [email,           setEmail]           = useState('');
-  const [password,        setPassword]        = useState('');
+export default function ResetPasswordPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const token = searchParams.get('token') ?? '';
+
+  const [newPassword,     setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error,           setError]           = useState('');
   const [loading,         setLoading]         = useState(false);
@@ -17,14 +18,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    if (!firstName.trim())            { setError('First name is required'); return; }
-    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
-    if (password.length < 6)          { setError('Password must be at least 6 characters'); return; }
+    if (newPassword.length < 6)          { setError('Password must be at least 6 characters'); return; }
+    if (newPassword !== confirmPassword)  { setError('Passwords do not match'); return; }
+    if (!token)                           { setError('Invalid reset link. Please request a new one.'); return; }
 
     setLoading(true);
-    const result = await createUser(email, password, firstName.trim());
+    const result = await resetPassword(token, newPassword);
     setLoading(false);
-    if (result.error) { setError(result.error); } else { navigate('/check-email', { state: { email } }); }
+
+    if (result.success) {
+      navigate('/login', { state: { passwordUpdated: true } });
+    } else {
+      setError(result.error ?? 'Failed to reset password. The link may have expired.');
+    }
   }
 
   return (
@@ -43,13 +49,13 @@ export default function RegisterPage() {
 
         <div>
           <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
-            Focused Work
+            Account recovery
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
-            Get started.
+            Choose a new password.
           </h1>
           <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
-            Create your account and start tracking your work sessions today.
+            Pick something strong and you won&apos;t need to do this again.
           </p>
         </div>
 
@@ -58,7 +64,7 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      {/* Right panel — form */}
+      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-8 py-12 animate-fade-up">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
@@ -72,20 +78,25 @@ export default function RegisterPage() {
             <span className="font-display text-base font-bold text-on-surface">TimeTrack</span>
           </div>
 
-          <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Create account</h2>
-          <p className="font-body text-sm text-on-surface/40 mb-8">Get started with TimeTrack — it&apos;s free</p>
+          <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">New password</h2>
+          <p className="font-body text-sm text-on-surface/40 mb-8">Choose a new password for your account.</p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <Input label="First Name"       type="text"     placeholder="Your first name"       value={firstName}       onChange={setFirstName} autoFocus />
-            <Input label="Email"            type="email"    placeholder="you@example.com"       value={email}           onChange={setEmail} />
-            <Input label="Password"         type="password" placeholder="At least 6 characters" value={password}        onChange={setPassword} />
-            <Input label="Confirm Password" type="password" placeholder="Repeat your password"  value={confirmPassword} onChange={setConfirmPassword} />
-
-            <div className="bg-secondary-container rounded-xl px-4 py-3">
-              <p className="font-body text-xs text-on-secondary-container leading-relaxed">
-                You&apos;ll receive a confirmation email to verify your account after registration.
-              </p>
-            </div>
+            <Input
+              label="New Password"
+              type="password"
+              placeholder="At least 6 characters"
+              value={newPassword}
+              onChange={setNewPassword}
+              autoFocus
+            />
+            <Input
+              label="Confirm Password"
+              type="password"
+              placeholder="Repeat your new password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+            />
 
             {error && (
               <div className="bg-red-50 rounded-xl px-4 py-3">
@@ -94,14 +105,13 @@ export default function RegisterPage() {
             )}
 
             <Button type="submit" fullWidth disabled={loading}>
-              {loading ? 'Creating account…' : 'Create Account'}
+              {loading ? 'Updating password…' : 'Update password'}
             </Button>
           </form>
 
           <p className="font-body text-sm text-on-surface/40 text-center mt-6">
-            Already have an account?{' '}
             <Link to="/login" className="text-primary font-semibold hover:underline">
-              Sign in
+              Back to sign in
             </Link>
           </p>
         </div>
