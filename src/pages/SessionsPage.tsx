@@ -32,41 +32,42 @@ type SessionMode = 'list' | 'focus';
 export default function SessionsPage() {
   const { elapsed, isRunning, formattedTime, start, pause, reset, syncElapsed } = useTimer();
 
-  // list-view state
-  const [mode,           setMode]           = useState<SessionMode>('list');
-  const [sessions,       setSessions]       = useState<SessionMetadata[]>([]);
-  const [projects,       setProjects]       = useState<ApiProject[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(true);
+  // ── list-view state ───────────────────────────────────────────────────────
+  const [mode,             setMode]             = useState<SessionMode>('list');
+  const [sessions,         setSessions]         = useState<SessionMetadata[]>([]);
+  const [projects,         setProjects]         = useState<ApiProject[]>([]);
+  const [loadingSessions,  setLoadingSessions]  = useState(true);
 
   // project picker
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [pickerProjectId,   setPickerProjectId]   = useState('');
 
-  // focus-mode state
+  // ── focus-mode state ──────────────────────────────────────────────────────
   const [activeProjectId,  setActiveProjectId]  = useState('');
   const [activeProject,    setActiveProject]    = useState<ApiProject | null>(null);
-  const [activeSessionId,  setActiveSessionId]  = useState(''); // track session _id for notes
+  const [activeSessionId,  setActiveSessionId]  = useState(''); // for notes attachment
   const [tasks,            setTasks]            = useState<ApiTask[]>([]);
   const [activeTaskId,     setActiveTaskId]     = useState<string | null>(null);
 
-  // local per-task display timers (for UX only — backend is authoritative)
+  // local per-task display timers (UX only — backend is authoritative)
   const [taskTimers, setTaskTimers] = useState<Record<string, { accumulated: number; startedAt: number | null }>>({});
 
-  // add-task in focus
+  // add-task form
   const [showAddTask,  setShowAddTask]  = useState(false);
   const [newTaskName,  setNewTaskName]  = useState('');
   const [newTaskDesc,  setNewTaskDesc]  = useState('');
 
-  // session notes in focus mode
-  const [sessionNotes,     setSessionNotes]     = useState<ApiNote[]>([]);
-  const [showNoteForm,     setShowNoteForm]     = useState(false);
-  const [newNoteContent,   setNewNoteContent]   = useState('');
-  const [noteSaving,       setNoteSaving]       = useState(false);
+  // ── session notes state ───────────────────────────────────────────────────
+  const [sessionNotes,   setSessionNotes]   = useState<ApiNote[]>([]);
+  const [showNoteForm,   setShowNoteForm]   = useState(false);
+  const [newNoteContent, setNewNoteContent] = useState('');
+  const [noteSaving,     setNoteSaving]     = useState(false);
 
-  // summary
+  // ── summary ───────────────────────────────────────────────────────────────
   const [showSummary,    setShowSummary]    = useState(false);
   const [summaryElapsed, setSummaryElapsed] = useState(0);
 
+  // ── data loaders ──────────────────────────────────────────────────────────
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
     const res = await listSessions();
@@ -81,7 +82,6 @@ export default function SessionsPage() {
     if (list.length > 0 && !pickerProjectId) setPickerProjectId(list[0]._id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // On mount: load data + check for existing active session
   useEffect(() => {
     loadSessions();
     loadProjects();
@@ -97,26 +97,23 @@ export default function SessionsPage() {
       const session = status.all;
       if (!session) return;
 
-      // Restore focus mode
       const projRes = await fetchProjects();
       const proj = (projRes.data ?? []).find((p) => p._id === session.projectId.toString());
       if (!proj) return;
 
       setActiveProjectId(session.projectId.toString());
       setActiveProject(proj);
-      setActiveSessionId(session._id); // restore session id so notes work
+      setActiveSessionId(session._id);
 
       const taskRes = await fetchTasksForProject(session.projectId.toString());
       setTasks(taskRes.data ?? []);
 
-      // Seed local task timers from backend task times
       const timers: Record<string, { accumulated: number; startedAt: number | null }> = {};
       for (const t of session.tasks ?? []) {
         timers[t.taskId.toString()] = { accumulated: t.totalTime, startedAt: null };
       }
       setTaskTimers(timers);
 
-      // Load existing session notes
       const notesRes = await fetchNotesFor('session', session._id);
       setSessionNotes(notesRes.data ?? []);
 
@@ -125,13 +122,13 @@ export default function SessionsPage() {
 
       if (status.status === 'in-progress') {
         start();
-        // Restart active tasks display timer
         const runningTask = (session.tasks ?? []).find((t) => !t.paused);
         if (runningTask) setActiveTaskId(runningTask.taskId.toString());
       }
     }
   }
 
+  // ── session lifecycle ─────────────────────────────────────────────────────
   async function handleBeginSession() {
     if (!pickerProjectId) return;
     const createRes = await createSession(pickerProjectId);
@@ -140,7 +137,7 @@ export default function SessionsPage() {
     const startRes = await startSession();
     if (startRes.error) return;
 
-    // capture the new session's _id from the status response so we can attach notes
+    // Capture the new session _id for note attachment
     const statusRes = await getSessionStatus();
     setActiveSessionId(statusRes.data?.all?._id ?? '');
 
@@ -194,8 +191,7 @@ export default function SessionsPage() {
     loadSessions();
   }
 
-  // ── Task operations ──────────────────────────────────────────────────────────
-
+  // ── task operations ───────────────────────────────────────────────────────
   function stopTaskTimerLocally(taskId: string) {
     const now = Date.now();
     setTaskTimers((prev) => {
@@ -212,12 +208,10 @@ export default function SessionsPage() {
   }
 
   async function handleStartTask(taskId: string) {
-    // Stop current task locally
     if (activeTaskId && activeTaskId !== taskId) {
       stopTaskTimerLocally(activeTaskId);
       await removeTaskFromSession(activeTaskId);
     }
-    // Start new task
     setTaskTimers((prev) => ({
       ...prev,
       [taskId]: { accumulated: prev[taskId]?.accumulated ?? 0, startedAt: Date.now() },
@@ -254,13 +248,10 @@ export default function SessionsPage() {
     setNewTaskName('');
     setNewTaskDesc('');
     setShowAddTask(false);
-
-    // Reload tasks from the server — the createTask endpoint returns the task document
-    // after a backend fix, but we reload anyway as the safest approach.
+    // Reload tasks — safest regardless of backend response shape
     const taskRes = await fetchTasksForProject(activeProjectId);
     if (!taskRes.error && taskRes.data) {
       setTasks(taskRes.data);
-      // Seed timer entry for any tasks not yet tracked
       setTaskTimers((prev) => {
         const next = { ...prev };
         for (const t of taskRes.data!) {
@@ -271,18 +262,21 @@ export default function SessionsPage() {
     }
   }
 
-  // ── Session notes ────────────────────────────────────────────────────────────
-
+  // ── session notes ─────────────────────────────────────────────────────────
   async function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
     if (!newNoteContent.trim() || !activeSessionId) return;
     setNoteSaving(true);
     const res = await createNote(newNoteContent.trim(), 'session', activeSessionId);
+    // createNote backend returns insertOne result, not the note document.
+    // Re-fetch so we display the actual persisted note with correct _id/createdAt.
+    if (!res.error) {
+      const notesRes = await fetchNotesFor('session', activeSessionId);
+      setSessionNotes(notesRes.data ?? []);
+      setNewNoteContent('');
+      setShowNoteForm(false);
+    }
     setNoteSaving(false);
-    if (res.error || !res.data) return;
-    setSessionNotes((prev) => [...prev, res.data!]);
-    setNewNoteContent('');
-    setShowNoteForm(false);
   }
 
   async function handleDeleteNote(noteId: string) {
@@ -290,15 +284,13 @@ export default function SessionsPage() {
     setSessionNotes((prev) => prev.filter((n) => n._id !== noteId));
   }
 
-  // ── Misc ─────────────────────────────────────────────────────────────────────
-
+  // ── misc ──────────────────────────────────────────────────────────────────
   function openProjectPicker() {
     if (projects.length > 0) setPickerProjectId(projects[0]._id);
     setShowProjectPicker(true);
   }
 
   const sessionStats = computeSessionStats(sessions);
-  // Filter out active sessions from the log (they have no endDate)
   const completedSessions = sessions.filter((s) => !!s.endDate);
 
   return (
@@ -347,8 +339,7 @@ export default function SessionsPage() {
           ) : completedSessions.length > 0 ? (
             <div className="flex flex-col gap-2">
               {completedSessions.slice().reverse().map((session, i) => (
-                // linkable so users can click through to the session detail / notes page
-                <SessionLogItem key={session._id} session={session} index={i} linkable />
+                <SessionLogItem key={session._id} session={session} index={i} linkable from="/sessions" />
               ))}
             </div>
           ) : (
@@ -370,7 +361,8 @@ export default function SessionsPage() {
 
       {/* ── Focus mode overlay ── */}
       {mode === 'focus' && (
-        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col animate-fade-in overflow-y-auto">
+        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col animate-fade-in">
+
           {/* Top bar */}
           <div className="px-8 pt-5 pb-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
@@ -381,9 +373,9 @@ export default function SessionsPage() {
           </div>
           <div className="mx-8 h-px bg-white/6 shrink-0" />
 
-          {/* Timer */}
-          <div className="flex flex-col items-center justify-center gap-5 px-8 py-12">
-            <div className="h-5 flex items-center">
+          {/* Timer strip */}
+          <div className="flex flex-col items-center gap-4 px-8 py-8 shrink-0">
+            <div className="h-4 flex items-center">
               {isRunning ? (
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
@@ -396,12 +388,12 @@ export default function SessionsPage() {
 
             <p
               className="font-display font-bold text-white leading-none tabular-nums"
-              style={{ fontSize: 'clamp(3.5rem, 11vw, 7.5rem)' }}
+              style={{ fontSize: 'clamp(3rem, 9vw, 6.5rem)' }}
             >
               {formattedTime}
             </p>
 
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-3">
               <button
                 onClick={isRunning ? handlePauseSession : handleResumeSession}
                 className="flex items-center gap-2 rounded-xl px-5 py-2.5 font-body text-sm font-medium
@@ -438,199 +430,203 @@ export default function SessionsPage() {
             </div>
           </div>
 
-          {/* Tasks panel */}
-          <div className="px-8 pb-6 w-full max-w-2xl mx-auto shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Tasks</p>
-              <button
-                onClick={() => setShowAddTask((v) => !v)}
-                className="font-body text-xs text-primary/60 hover:text-primary
-                  transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Add Task
-              </button>
-            </div>
+          <div className="mx-8 h-px bg-white/6 shrink-0" />
 
-            {showAddTask && (
-              <form onSubmit={handleAddTaskInFocus} className="mb-3 bg-white/5 rounded-xl px-4 py-4 flex flex-col gap-3">
-                <input
-                  autoFocus
-                  placeholder="Task name"
-                  value={newTaskName}
-                  onChange={(e) => setNewTaskName(e.target.value)}
-                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
-                    placeholder:text-white/25 outline-none ring-2 ring-transparent
-                    focus:ring-primary/40 transition-all w-full"
-                />
-                <input
-                  placeholder="Description (optional)"
-                  value={newTaskDesc}
-                  onChange={(e) => setNewTaskDesc(e.target.value)}
-                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
-                    placeholder:text-white/25 outline-none ring-2 ring-transparent
-                    focus:ring-primary/40 transition-all w-full"
-                />
-                <div className="flex items-center gap-2">
+          {/* Two-column panel: Tasks | Notes */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-0 h-full divide-x divide-white/6">
+
+              {/* ── Left column: Tasks ─────────────────────────────────── */}
+              <div className="flex flex-col min-h-0 px-6 py-5">
+                {/* Column header */}
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/30 font-semibold">Tasks</p>
                   <button
-                    type="submit"
-                    disabled={!newTaskName.trim()}
-                    className="rounded-lg px-4 py-2 font-body text-xs font-semibold cursor-pointer
-                      bg-primary text-white hover:bg-primary-container transition-all
-                      disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                    onClick={() => setShowAddTask((v) => !v)}
+                    className="flex items-center gap-1 font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
                   >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddTask(false); setNewTaskName(''); setNewTaskDesc(''); }}
-                    className="rounded-lg px-4 py-2 font-body text-xs text-white/40
-                      hover:text-white/70 transition-colors cursor-pointer"
-                  >
-                    Cancel
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Task
                   </button>
                 </div>
-              </form>
-            )}
 
-            {tasks.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {tasks.map((task) => {
-                  const isActive    = activeTaskId === task._id;
-                  const taskElapsed = getTaskElapsed(task._id);
-                  return (
-                    <div
-                      key={task._id}
-                      className={`flex items-center justify-between rounded-xl px-4 py-3.5 transition-all duration-200 ${
-                        isActive ? 'bg-primary/18 ring-1 ring-primary/30' : 'bg-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot shrink-0" />}
-                        <div className="min-w-0">
-                          <p className={`font-body text-sm font-medium truncate ${isActive ? 'text-white' : 'text-white/60'}`}>
-                            {task.name}
-                          </p>
-                          {task.description && (
-                            <p className="font-body text-xs text-white/25 mt-0.5 truncate">{task.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0 ml-4">
-                        <span className="font-body text-sm text-primary/70 tabular-nums min-w-[4.5rem] text-right">
-                          {formatSeconds(taskElapsed)}
-                        </span>
-                        {isActive ? (
-                          <button
-                            onClick={handleStopTask}
-                            className="rounded-lg px-3 py-1.5 font-body text-xs cursor-pointer
-                              bg-white/8 text-white/50 hover:bg-white/14 hover:text-white/80 transition-all"
-                          >
-                            Stop
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleStartTask(task._id)}
-                            className="rounded-lg px-3 py-1.5 font-body text-xs cursor-pointer
-                              bg-primary/20 text-primary hover:bg-primary/30 transition-all"
-                          >
-                            Start
-                          </button>
-                        )}
-                      </div>
+                {/* Add task form */}
+                {showAddTask && (
+                  <form onSubmit={handleAddTaskInFocus} className="mb-3 bg-white/5 rounded-xl px-4 py-3 flex flex-col gap-2.5 shrink-0">
+                    <input
+                      autoFocus
+                      placeholder="Task name"
+                      value={newTaskName}
+                      onChange={(e) => setNewTaskName(e.target.value)}
+                      className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
+                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        focus:ring-primary/40 transition-all w-full"
+                    />
+                    <input
+                      placeholder="Description (optional)"
+                      value={newTaskDesc}
+                      onChange={(e) => setNewTaskDesc(e.target.value)}
+                      className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
+                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        focus:ring-primary/40 transition-all w-full"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={!newTaskName.trim()}
+                        className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                          bg-primary text-white hover:bg-primary-container transition-all
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddTask(false); setNewTaskName(''); setNewTaskDesc(''); }}
+                        className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            ) : !showAddTask ? (
-              <div className="bg-white/4 rounded-xl px-4 py-5 text-center">
-                <p className="font-body text-sm text-white/25">
-                  No tasks yet — add one above to track time per task.
-                </p>
-              </div>
-            ) : null}
-          </div>
+                  </form>
+                )}
 
-          {/* Session notes panel */}
-          <div className="px-8 pb-10 w-full max-w-2xl mx-auto shrink-0">
-            <div className="h-px bg-white/6 mb-5" />
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Session Notes</p>
-              <button
-                onClick={() => setShowNoteForm((v) => !v)}
-                className="font-body text-xs text-primary/60 hover:text-primary
-                  transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Add Note
-              </button>
-            </div>
+                {/* Task list */}
+                {tasks.length > 0 ? (
+                  <div className="flex flex-col gap-2 overflow-y-auto">
+                    {tasks.map((task) => {
+                      const isActive    = activeTaskId === task._id;
+                      const taskElapsed = getTaskElapsed(task._id);
+                      return (
+                        <div
+                          key={task._id}
+                          className={`flex items-center justify-between rounded-xl px-3.5 py-3 transition-all duration-200 ${
+                            isActive ? 'bg-primary/18 ring-1 ring-primary/30' : 'bg-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot shrink-0" />}
+                            <div className="min-w-0">
+                              <p className={`font-body text-sm font-medium truncate ${isActive ? 'text-white' : 'text-white/60'}`}>
+                                {task.name}
+                              </p>
+                              {task.description && (
+                                <p className="font-body text-xs text-white/25 truncate">{task.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-3">
+                            <span className="font-body text-xs text-primary/70 tabular-nums">{formatSeconds(taskElapsed)}</span>
+                            {isActive ? (
+                              <button
+                                onClick={handleStopTask}
+                                className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
+                                  bg-white/8 text-white/50 hover:bg-white/14 hover:text-white/80 transition-all"
+                              >
+                                Stop
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleStartTask(task._id)}
+                                className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
+                                  bg-primary/20 text-primary hover:bg-primary/30 transition-all"
+                              >
+                                Start
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : !showAddTask ? (
+                  <div className="bg-white/4 rounded-xl px-4 py-6 text-center">
+                    <p className="font-body text-sm text-white/25">No tasks yet — add one above.</p>
+                  </div>
+                ) : null}
+              </div>
 
-            {showNoteForm && (
-              <form onSubmit={handleAddNote} className="mb-3 bg-white/5 rounded-xl px-4 py-4 flex flex-col gap-3">
-                <textarea
-                  autoFocus
-                  placeholder="Write a note about this session…"
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  rows={3}
-                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
-                    placeholder:text-white/25 outline-none ring-2 ring-transparent
-                    focus:ring-primary/40 transition-all w-full resize-none"
-                />
-                <div className="flex items-center gap-2">
+              {/* ── Right column: Notes ─────────────────────────────────── */}
+              <div className="flex flex-col min-h-0 px-6 py-5">
+                {/* Column header */}
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/30 font-semibold">Notes</p>
                   <button
-                    type="submit"
-                    disabled={!newNoteContent.trim() || noteSaving}
-                    className="rounded-lg px-4 py-2 font-body text-xs font-semibold cursor-pointer
-                      bg-primary text-white hover:bg-primary-container transition-all
-                      disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                    onClick={() => { setShowNoteForm((v) => !v); setEditingNoteId(null); }}
+                    className="flex items-center gap-1 font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
                   >
-                    {noteSaving ? 'Saving…' : 'Save'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowNoteForm(false); setNewNoteContent(''); }}
-                    className="rounded-lg px-4 py-2 font-body text-xs text-white/40
-                      hover:text-white/70 transition-colors cursor-pointer"
-                  >
-                    Cancel
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Note
                   </button>
                 </div>
-              </form>
-            )}
 
-            {sessionNotes.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {sessionNotes.map((note) => (
-                  <div key={note._id} className="bg-white/5 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                    <p className="font-body text-sm text-white/70 leading-relaxed whitespace-pre-wrap flex-1 min-w-0">
-                      {note.content}
-                    </p>
-                    <button
-                      onClick={() => handleDeleteNote(note._id)}
-                      className="shrink-0 text-white/20 hover:text-red-400 transition-colors cursor-pointer mt-0.5"
-                      aria-label="Delete note"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-                        <path d="M9 6V4h6v2" />
-                      </svg>
-                    </button>
+                {/* Add note form */}
+                {showNoteForm && (
+                  <form onSubmit={handleAddNote} className="mb-3 bg-white/5 rounded-xl px-4 py-3 flex flex-col gap-2.5 shrink-0">
+                    <textarea
+                      autoFocus
+                      placeholder="Write a note about this session…"
+                      value={newNoteContent}
+                      onChange={(e) => setNewNoteContent(e.target.value)}
+                      rows={3}
+                      className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
+                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        focus:ring-primary/40 transition-all w-full resize-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={!newNoteContent.trim() || noteSaving}
+                        className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                          bg-primary text-white hover:bg-primary-container transition-all
+                          disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {noteSaving ? 'Saving…' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNoteForm(false); setNewNoteContent(''); }}
+                        className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Note list */}
+                {sessionNotes.length > 0 ? (
+                  <div className="flex flex-col gap-2 overflow-y-auto">
+                    {sessionNotes.map((note) => (
+                      <div key={note._id} className="bg-white/5 rounded-xl px-3.5 py-3 flex items-start justify-between gap-2">
+                        <p className="font-body text-sm text-white/70 leading-relaxed whitespace-pre-wrap flex-1 min-w-0">
+                          {note.content}
+                        </p>
+                        <button
+                          onClick={() => handleDeleteNote(note._id)}
+                          className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1 rounded shrink-0 mt-0.5"
+                          aria-label="Delete note"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+                            <path d="M9 6V4h6v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : !showNoteForm ? (
+                  <div className="bg-white/4 rounded-xl px-4 py-6 text-center">
+                    <p className="font-body text-sm text-white/25">No notes yet — jot something down.</p>
+                  </div>
+                ) : null}
               </div>
-            ) : !showNoteForm ? (
-              <div className="bg-white/4 rounded-xl px-4 py-5 text-center">
-                <p className="font-body text-sm text-white/25">
-                  No notes yet — jot something down above.
-                </p>
-              </div>
-            ) : null}
+
+            </div>
           </div>
         </div>
       )}

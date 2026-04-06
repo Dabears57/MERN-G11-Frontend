@@ -383,7 +383,7 @@ function NoteItem({ note, onDelete, compact }: NoteItemProps) {
       </div>
       <button
         onClick={() => onDelete(note._id)}
-        className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer mt-0.5"
+        className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest mt-0.5"
         aria-label="Delete note"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

@@ -11,6 +11,7 @@ interface SessionLogItemProps {
   session: SessionMetadata;
   index: number;
   linkable?: boolean;
+  from?: string;
 }
 
 function durationLabel(startStr: string | null, endStr: string | null): string {
@@ -37,7 +38,7 @@ function timeLabel(startStr: string | null, endStr: string | null): string {
   return startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function SessionLogItem({ session, index, linkable }: SessionLogItemProps) {
+export default function SessionLogItem({ session, index, linkable, from }: SessionLogItemProps) {
   const navigate = useNavigate();
   const accent   = ACCENT_COMBOS[index % ACCENT_COMBOS.length];
   const initial  = (session.projectName || session.name || '?').charAt(0).toUpperCase();
@@ -45,7 +46,7 @@ export default function SessionLogItem({ session, index, linkable }: SessionLogI
   const time     = timeLabel(session.startDate, session.endDate);
 
   function handleClick() {
-    if (linkable) navigate(`/insights/session/${session._id}`);
+    if (linkable) navigate(`/insights/session/${session._id}`, { state: { from } });
   }
 
   return (

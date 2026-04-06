@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import { getFullSession } from '../api/queries.ts';
-import { createNote, deleteNote } from '../api/notes.ts';
+import { createNote, fetchNotesFor, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
 import type { FullSession, ApiNote } from '../types/index.ts';
 
@@ -14,14 +14,17 @@ function formatSeconds(s: number): string {
 
 export default function InsightSessionPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const backTo: string = (location.state as { from?: string } | null)?.from ?? '/insights';
+  const backLabel = backTo === '/sessions' ? 'Sessions' : 'Insights';
 
-  const [data,        setData]        = useState<FullSession | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState('');
+  const [data,         setData]         = useState<FullSession | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
 
-  // note form
-  const [noteContent, setNoteContent] = useState('');
-  const [noteSaving,  setNoteSaving]  = useState(false);
+  const [notes,        setNotes]        = useState<ApiNote[]>([]);
+  const [noteContent,  setNoteContent]  = useState('');
+  const [noteSaving,   setNoteSaving]   = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
 
   const load = useCallback(async () => {
@@ -35,25 +38,28 @@ export default function InsightSessionPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // fetch notes for this session separately since getFullSession doesn't include notes
-  const [notes, setNotes] = useState<ApiNote[]>([]);
-  useEffect(() => {
+  // Fetch session notes separately — getFullSession doesn't include them
+  const loadNotes = useCallback(async () => {
     if (!id) return;
-    import('../api/notes.ts').then(({ fetchNotesFor }) => {
-      fetchNotesFor('session', id).then((res) => setNotes(res.data ?? []));
-    });
+    const res = await fetchNotesFor('session', id);
+    setNotes(res.data ?? []);
   }, [id]);
+
+  useEffect(() => { loadNotes(); }, [loadNotes]);
 
   async function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
     if (!noteContent.trim() || !id) return;
     setNoteSaving(true);
     const res = await createNote(noteContent.trim(), 'session', id);
+    // createNote backend returns insertOne result, not the note document.
+    // Re-fetch so we display the actual persisted note with correct _id/createdAt.
+    if (!res.error) {
+      await loadNotes();
+      setNoteContent('');
+      setShowNoteForm(false);
+    }
     setNoteSaving(false);
-    if (res.error || !res.data) return;
-    setNotes((prev) => [...prev, res.data!]);
-    setNoteContent('');
-    setShowNoteForm(false);
   }
 
   async function handleDeleteNote(noteId: string) {
@@ -76,8 +82,8 @@ export default function InsightSessionPage() {
   if (error || !data) {
     return (
       <div className="animate-fade-up">
-        <Link to="/insights" className="font-body text-sm text-on-surface/50 hover:text-primary mb-4 inline-block">
-          ← Back to Insights
+        <Link to={backTo} className="font-body text-sm text-on-surface/50 hover:text-primary mb-4 inline-block">
+          ← Back to {backLabel}
         </Link>
         <p className="font-body text-on-surface/50">{error || 'Session not found.'}</p>
       </div>
@@ -100,11 +106,11 @@ export default function InsightSessionPage() {
 
   return (
     <div className="animate-fade-up">
-      <Link to="/insights" className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/40 hover:text-primary transition-colors mb-6">
+      <Link to={backTo} className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/40 hover:text-primary transition-colors mb-6">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        Insights
+        {backLabel}
       </Link>
 
       <div className="mb-7">
@@ -135,7 +141,7 @@ export default function InsightSessionPage() {
           <h2 className="font-display text-lg font-bold text-on-surface mb-4">Tasks</h2>
           <div className="flex flex-col gap-2">
             {tasks.map((task) => (
-              <div key={task._id} className="bg-surface-container-low rounded-2xl px-5 py-3 flex items-center justify-between">
+              <div key={String(task._id)} className="bg-surface-container-low rounded-2xl px-5 py-3 flex items-center justify-between">
                 <p className="font-body text-sm text-on-surface">{task.name}</p>
                 <span className="font-display text-sm font-bold text-primary">{formatSeconds(task.timeSpent)}</span>
               </div>
@@ -190,7 +196,7 @@ export default function InsightSessionPage() {
                   </div>
                   <button
                     onClick={() => handleDeleteNote(note._id)}
-                    className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer mt-0.5"
+                    className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container mt-0.5"
                     aria-label="Delete note"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
