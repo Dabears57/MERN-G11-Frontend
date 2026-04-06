@@ -16,7 +16,7 @@ import {
   removeTaskFromSession,
 } from '../api/sessions.ts';
 import { computeSessionStats } from '../data/mock.ts';
-import type { ApiProject, ApiTask, SessionMetadata, SessionStatus } from '../types/index.ts';
+import type { ApiProject, ApiTask, SessionMetadata } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
   const h   = Math.floor(s / 3600);
@@ -46,7 +46,6 @@ export default function SessionsPage() {
   const [activeProject,    setActiveProject]    = useState<ApiProject | null>(null);
   const [tasks,            setTasks]            = useState<ApiTask[]>([]);
   const [activeTaskId,     setActiveTaskId]     = useState<string | null>(null);
-  const [sessionStatus,    setSessionStatus]    = useState<SessionStatus | null>(null);
 
   // local per-task display timers (for UX only — backend is authoritative)
   const [taskTimers, setTaskTimers] = useState<Record<string, { accumulated: number; startedAt: number | null }>>({});
@@ -85,7 +84,6 @@ export default function SessionsPage() {
     const res = await getSessionStatus();
     if (!res.data) return;
     const status = res.data;
-    setSessionStatus(status);
 
     if (status.status === 'in-progress' || status.status === 'paused') {
       const session = status.all;

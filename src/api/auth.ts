@@ -122,7 +122,6 @@ export async function resetPassword(
   newPassword: string
 ): Promise<{ success?: boolean; error?: string }> {
   try {
-    console.log('[resetPassword] body:', { email, token, newPassword });
     const response = await fetch(buildPath('api/users/password/reset'), {
       method: 'POST',
       body: JSON.stringify({ email, token, newPassword }),
