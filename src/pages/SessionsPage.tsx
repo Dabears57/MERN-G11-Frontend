@@ -6,6 +6,7 @@ import { useTimer } from '../hooks/useTimer.ts';
 import { listSessions } from '../api/queries.ts';
 import { fetchProjects } from '../api/projects.ts';
 import { fetchTasksForProject, createTask } from '../api/tasks.ts';
+import { fetchNotesFor, createNote, deleteNote } from '../api/notes.ts';
 import {
   createSession,
   startSession,
@@ -16,7 +17,7 @@ import {
   removeTaskFromSession,
 } from '../api/sessions.ts';
 import { computeSessionStats } from '../data/mock.ts';
-import type { ApiProject, ApiTask, SessionMetadata } from '../types/index.ts';
+import type { ApiProject, ApiTask, ApiNote, SessionMetadata } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
   const h   = Math.floor(s / 3600);
@@ -44,6 +45,7 @@ export default function SessionsPage() {
   // focus-mode state
   const [activeProjectId,  setActiveProjectId]  = useState('');
   const [activeProject,    setActiveProject]    = useState<ApiProject | null>(null);
+  const [activeSessionId,  setActiveSessionId]  = useState(''); // track session _id for notes
   const [tasks,            setTasks]            = useState<ApiTask[]>([]);
   const [activeTaskId,     setActiveTaskId]     = useState<string | null>(null);
 
@@ -54,6 +56,12 @@ export default function SessionsPage() {
   const [showAddTask,  setShowAddTask]  = useState(false);
   const [newTaskName,  setNewTaskName]  = useState('');
   const [newTaskDesc,  setNewTaskDesc]  = useState('');
+
+  // session notes in focus mode
+  const [sessionNotes,     setSessionNotes]     = useState<ApiNote[]>([]);
+  const [showNoteForm,     setShowNoteForm]     = useState(false);
+  const [newNoteContent,   setNewNoteContent]   = useState('');
+  const [noteSaving,       setNoteSaving]       = useState(false);
 
   // summary
   const [showSummary,    setShowSummary]    = useState(false);
@@ -96,6 +104,7 @@ export default function SessionsPage() {
 
       setActiveProjectId(session.projectId.toString());
       setActiveProject(proj);
+      setActiveSessionId(session._id); // restore session id so notes work
 
       const taskRes = await fetchTasksForProject(session.projectId.toString());
       setTasks(taskRes.data ?? []);
@@ -106,6 +115,10 @@ export default function SessionsPage() {
         timers[t.taskId.toString()] = { accumulated: t.totalTime, startedAt: null };
       }
       setTaskTimers(timers);
+
+      // Load existing session notes
+      const notesRes = await fetchNotesFor('session', session._id);
+      setSessionNotes(notesRes.data ?? []);
 
       syncElapsed(status.timeElapsedSecs);
       setMode('focus');
@@ -127,6 +140,10 @@ export default function SessionsPage() {
     const startRes = await startSession();
     if (startRes.error) return;
 
+    // capture the new session's _id from the status response so we can attach notes
+    const statusRes = await getSessionStatus();
+    setActiveSessionId(statusRes.data?.all?._id ?? '');
+
     const proj = projects.find((p) => p._id === pickerProjectId) ?? null;
     setActiveProjectId(pickerProjectId);
     setActiveProject(proj);
@@ -135,6 +152,7 @@ export default function SessionsPage() {
     setTasks(taskRes.data ?? []);
     setTaskTimers({});
     setActiveTaskId(null);
+    setSessionNotes([]);
     setShowProjectPicker(false);
     setMode('focus');
     reset(0);
@@ -168,13 +186,16 @@ export default function SessionsPage() {
     reset(0);
     setActiveProjectId('');
     setActiveProject(null);
+    setActiveSessionId('');
     setTasks([]);
     setTaskTimers({});
     setActiveTaskId(null);
+    setSessionNotes([]);
     loadSessions();
   }
 
-  // Task operations
+  // ── Task operations ──────────────────────────────────────────────────────────
+
   function stopTaskTimerLocally(taskId: string) {
     const now = Date.now();
     setTaskTimers((prev) => {
@@ -229,14 +250,47 @@ export default function SessionsPage() {
     e.preventDefault();
     if (!newTaskName.trim() || !activeProjectId) return;
     const res = await createTask(activeProjectId, newTaskName.trim(), newTaskDesc.trim());
-    if (res.error || !res.data) return;
-    const newTask = res.data;
-    setTasks((prev) => [...prev, newTask]);
-    setTaskTimers((prev) => ({ ...prev, [newTask._id]: { accumulated: 0, startedAt: null } }));
+    if (res.error) return;
     setNewTaskName('');
     setNewTaskDesc('');
     setShowAddTask(false);
+
+    // Reload tasks from the server — the createTask endpoint returns the task document
+    // after a backend fix, but we reload anyway as the safest approach.
+    const taskRes = await fetchTasksForProject(activeProjectId);
+    if (!taskRes.error && taskRes.data) {
+      setTasks(taskRes.data);
+      // Seed timer entry for any tasks not yet tracked
+      setTaskTimers((prev) => {
+        const next = { ...prev };
+        for (const t of taskRes.data!) {
+          if (!next[t._id]) next[t._id] = { accumulated: 0, startedAt: null };
+        }
+        return next;
+      });
+    }
   }
+
+  // ── Session notes ────────────────────────────────────────────────────────────
+
+  async function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newNoteContent.trim() || !activeSessionId) return;
+    setNoteSaving(true);
+    const res = await createNote(newNoteContent.trim(), 'session', activeSessionId);
+    setNoteSaving(false);
+    if (res.error || !res.data) return;
+    setSessionNotes((prev) => [...prev, res.data!]);
+    setNewNoteContent('');
+    setShowNoteForm(false);
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    await deleteNote(noteId);
+    setSessionNotes((prev) => prev.filter((n) => n._id !== noteId));
+  }
+
+  // ── Misc ─────────────────────────────────────────────────────────────────────
 
   function openProjectPicker() {
     if (projects.length > 0) setPickerProjectId(projects[0]._id);
@@ -293,7 +347,8 @@ export default function SessionsPage() {
           ) : completedSessions.length > 0 ? (
             <div className="flex flex-col gap-2">
               {completedSessions.slice().reverse().map((session, i) => (
-                <SessionLogItem key={session._id} session={session} index={i} />
+                // linkable so users can click through to the session detail / notes page
+                <SessionLogItem key={session._id} session={session} index={i} linkable />
               ))}
             </div>
           ) : (
@@ -315,19 +370,19 @@ export default function SessionsPage() {
 
       {/* ── Focus mode overlay ── */}
       {mode === 'focus' && (
-        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col animate-fade-in">
+        <div className="fixed inset-0 z-[60] bg-on-surface flex flex-col animate-fade-in overflow-y-auto">
           {/* Top bar */}
-          <div className="px-8 pt-5 pb-3 flex items-center justify-between">
+          <div className="px-8 pt-5 pb-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
               <p className="font-display text-sm font-bold text-white/80">{activeProject?.title ?? 'Session'}</p>
             </div>
             <span className="font-body text-[0.6rem] text-white/25 uppercase tracking-[0.12em]">Focus Mode</span>
           </div>
-          <div className="mx-8 h-px bg-white/6" />
+          <div className="mx-8 h-px bg-white/6 shrink-0" />
 
           {/* Timer */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8">
+          <div className="flex flex-col items-center justify-center gap-5 px-8 py-12">
             <div className="h-5 flex items-center">
               {isRunning ? (
                 <div className="flex items-center gap-1.5">
@@ -384,7 +439,7 @@ export default function SessionsPage() {
           </div>
 
           {/* Tasks panel */}
-          <div className="px-8 pb-8 w-full max-w-2xl mx-auto">
+          <div className="px-8 pb-6 w-full max-w-2xl mx-auto shrink-0">
             <div className="flex items-center justify-between mb-3">
               <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Tasks</p>
               <button
@@ -493,6 +548,86 @@ export default function SessionsPage() {
               <div className="bg-white/4 rounded-xl px-4 py-5 text-center">
                 <p className="font-body text-sm text-white/25">
                   No tasks yet — add one above to track time per task.
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Session notes panel */}
+          <div className="px-8 pb-10 w-full max-w-2xl mx-auto shrink-0">
+            <div className="h-px bg-white/6 mb-5" />
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/25">Session Notes</p>
+              <button
+                onClick={() => setShowNoteForm((v) => !v)}
+                className="font-body text-xs text-primary/60 hover:text-primary
+                  transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Add Note
+              </button>
+            </div>
+
+            {showNoteForm && (
+              <form onSubmit={handleAddNote} className="mb-3 bg-white/5 rounded-xl px-4 py-4 flex flex-col gap-3">
+                <textarea
+                  autoFocus
+                  placeholder="Write a note about this session…"
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  rows={3}
+                  className="bg-white/8 rounded-lg px-4 py-2.5 font-body text-sm text-white
+                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                    focus:ring-primary/40 transition-all w-full resize-none"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={!newNoteContent.trim() || noteSaving}
+                    className="rounded-lg px-4 py-2 font-body text-xs font-semibold cursor-pointer
+                      bg-primary text-white hover:bg-primary-container transition-all
+                      disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                  >
+                    {noteSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowNoteForm(false); setNewNoteContent(''); }}
+                    className="rounded-lg px-4 py-2 font-body text-xs text-white/40
+                      hover:text-white/70 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {sessionNotes.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {sessionNotes.map((note) => (
+                  <div key={note._id} className="bg-white/5 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="font-body text-sm text-white/70 leading-relaxed whitespace-pre-wrap flex-1 min-w-0">
+                      {note.content}
+                    </p>
+                    <button
+                      onClick={() => handleDeleteNote(note._id)}
+                      className="shrink-0 text-white/20 hover:text-red-400 transition-colors cursor-pointer mt-0.5"
+                      aria-label="Delete note"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+                        <path d="M9 6V4h6v2" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : !showNoteForm ? (
+              <div className="bg-white/4 rounded-xl px-4 py-5 text-center">
+                <p className="font-body text-sm text-white/25">
+                  No notes yet — jot something down above.
                 </p>
               </div>
             ) : null}
