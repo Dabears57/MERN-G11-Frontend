@@ -47,7 +47,7 @@ export async function createUser(
 
     return {
       message: data.message,
-      verificationLink: data.data?.verificationLink,
+      verificationLink: data.data?.link,
     };
   } catch {
     return { error: 'Network error. Please try again.' };
@@ -117,13 +117,15 @@ export async function requestPasswordReset(
 }
 
 export async function resetPassword(
+  email: string,
   token: string,
   newPassword: string
 ): Promise<{ success?: boolean; error?: string }> {
   try {
+    console.log('[resetPassword] body:', { email, token, newPassword });
     const response = await fetch(buildPath('api/users/password/reset'), {
       method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ email, token, newPassword }),
       headers: { 'Content-Type': 'application/json' },
     });
 

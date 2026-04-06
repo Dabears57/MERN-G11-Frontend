@@ -1,11 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import StatCard from '../components/StatCard.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
 import Button from '../components/Button.tsx';
-import { useProjects } from '../hooks/useProjects.ts';
 import { useTimer } from '../hooks/useTimer.ts';
-import { MOCK_SESSIONS, computeSessionStats } from '../data/mock.ts';
-import type { TaskTimeEntry } from '../types/index.ts';
+import { listSessions } from '../api/queries.ts';
+import { fetchProjects } from '../api/projects.ts';
+import { fetchTasksForProject, createTask } from '../api/tasks.ts';
+import {
+  createSession,
+  startSession,
+  pauseSession,
+  stopSession,
+  getSessionStatus,
+  addTaskToSession,
+  removeTaskFromSession,
+} from '../api/sessions.ts';
+import { computeSessionStats } from '../data/mock.ts';
+import type { ApiProject, ApiTask, SessionMetadata, SessionStatus } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
   const h   = Math.floor(s / 3600);
@@ -15,31 +26,200 @@ function formatSeconds(s: number): string {
   return `${m}m ${sec.toString().padStart(2, '0')}s`;
 }
 
-type SessionMode  = 'list' | 'focus';
-type TaskTimeState = Record<string, { accumulated: number; startedAt: number | null }>;
+type SessionMode = 'list' | 'focus';
 
 export default function SessionsPage() {
-  const { projects, getProject, addTask } = useProjects();
-  const { elapsed, isRunning, formattedTime, start, pause, reset } = useTimer();
+  const { elapsed, isRunning, formattedTime, start, pause, reset, syncElapsed } = useTimer();
 
-  const [mode,               setMode]               = useState<SessionMode>('list');
-  const [showProjectPicker,  setShowProjectPicker]  = useState(false);
-  const [pickerProjectId,    setPickerProjectId]    = useState(projects[0]?.id ?? '');
-  const [activeProjectId,    setActiveProjectId]    = useState('');
-  const [taskTimes,          setTaskTimes]          = useState<TaskTimeState>({});
-  const [activeTaskId,       setActiveTaskId]       = useState<string | null>(null);
-  const [showSummary,        setShowSummary]        = useState(false);
-  const [summaryElapsed,     setSummaryElapsed]     = useState(0);
-  const [summaryData,        setSummaryData]        = useState<TaskTimeEntry[]>([]);
-  const [showAddTask,        setShowAddTask]        = useState(false);
-  const [newTaskName,        setNewTaskName]        = useState('');
-  const [newTaskDesc,        setNewTaskDesc]        = useState('');
+  // list-view state
+  const [mode,           setMode]           = useState<SessionMode>('list');
+  const [sessions,       setSessions]       = useState<SessionMetadata[]>([]);
+  const [projects,       setProjects]       = useState<ApiProject[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
 
-  const activeProject  = getProject(activeProjectId);
-  const sessionStats   = computeSessionStats(MOCK_SESSIONS);
+  // project picker
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [pickerProjectId,   setPickerProjectId]   = useState('');
+
+  // focus-mode state
+  const [activeProjectId,  setActiveProjectId]  = useState('');
+  const [activeProject,    setActiveProject]    = useState<ApiProject | null>(null);
+  const [tasks,            setTasks]            = useState<ApiTask[]>([]);
+  const [activeTaskId,     setActiveTaskId]     = useState<string | null>(null);
+  const [sessionStatus,    setSessionStatus]    = useState<SessionStatus | null>(null);
+
+  // local per-task display timers (for UX only — backend is authoritative)
+  const [taskTimers, setTaskTimers] = useState<Record<string, { accumulated: number; startedAt: number | null }>>({});
+
+  // add-task in focus
+  const [showAddTask,  setShowAddTask]  = useState(false);
+  const [newTaskName,  setNewTaskName]  = useState('');
+  const [newTaskDesc,  setNewTaskDesc]  = useState('');
+
+  // summary
+  const [showSummary,    setShowSummary]    = useState(false);
+  const [summaryElapsed, setSummaryElapsed] = useState(0);
+
+  const loadSessions = useCallback(async () => {
+    setLoadingSessions(true);
+    const res = await listSessions();
+    setSessions(res.data ?? []);
+    setLoadingSessions(false);
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    const res = await fetchProjects();
+    const list = res.data ?? [];
+    setProjects(list);
+    if (list.length > 0 && !pickerProjectId) setPickerProjectId(list[0]._id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On mount: load data + check for existing active session
+  useEffect(() => {
+    loadSessions();
+    loadProjects();
+    checkActiveSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function checkActiveSession() {
+    const res = await getSessionStatus();
+    if (!res.data) return;
+    const status = res.data;
+    setSessionStatus(status);
+
+    if (status.status === 'in-progress' || status.status === 'paused') {
+      const session = status.all;
+      if (!session) return;
+
+      // Restore focus mode
+      const projRes = await fetchProjects();
+      const proj = (projRes.data ?? []).find((p) => p._id === session.projectId.toString());
+      if (!proj) return;
+
+      setActiveProjectId(session.projectId.toString());
+      setActiveProject(proj);
+
+      const taskRes = await fetchTasksForProject(session.projectId.toString());
+      setTasks(taskRes.data ?? []);
+
+      // Seed local task timers from backend task times
+      const timers: Record<string, { accumulated: number; startedAt: number | null }> = {};
+      for (const t of session.tasks ?? []) {
+        timers[t.taskId.toString()] = { accumulated: t.totalTime, startedAt: null };
+      }
+      setTaskTimers(timers);
+
+      syncElapsed(status.timeElapsedSecs);
+      setMode('focus');
+
+      if (status.status === 'in-progress') {
+        start();
+        // Restart active tasks display timer
+        const runningTask = (session.tasks ?? []).find((t) => !t.paused);
+        if (runningTask) setActiveTaskId(runningTask.taskId.toString());
+      }
+    }
+  }
+
+  async function handleBeginSession() {
+    if (!pickerProjectId) return;
+    const createRes = await createSession(pickerProjectId);
+    if (createRes.error) return;
+
+    const startRes = await startSession();
+    if (startRes.error) return;
+
+    const proj = projects.find((p) => p._id === pickerProjectId) ?? null;
+    setActiveProjectId(pickerProjectId);
+    setActiveProject(proj);
+
+    const taskRes = await fetchTasksForProject(pickerProjectId);
+    setTasks(taskRes.data ?? []);
+    setTaskTimers({});
+    setActiveTaskId(null);
+    setShowProjectPicker(false);
+    setMode('focus');
+    reset(0);
+    start();
+  }
+
+  async function handlePauseSession() {
+    pause();
+    if (activeTaskId) stopTaskTimerLocally(activeTaskId);
+    setActiveTaskId(null);
+    await pauseSession();
+  }
+
+  async function handleResumeSession() {
+    await startSession();
+    start();
+  }
+
+  async function handleEndSession() {
+    pause();
+    if (activeTaskId) stopTaskTimerLocally(activeTaskId);
+    const finalElapsed = elapsed;
+    await stopSession();
+    setSummaryElapsed(finalElapsed);
+    setShowSummary(true);
+  }
+
+  async function handleDone() {
+    setShowSummary(false);
+    setMode('list');
+    reset(0);
+    setActiveProjectId('');
+    setActiveProject(null);
+    setTasks([]);
+    setTaskTimers({});
+    setActiveTaskId(null);
+    loadSessions();
+  }
+
+  // Task operations
+  function stopTaskTimerLocally(taskId: string) {
+    const now = Date.now();
+    setTaskTimers((prev) => {
+      const entry = prev[taskId];
+      if (!entry || entry.startedAt === null) return prev;
+      return {
+        ...prev,
+        [taskId]: {
+          accumulated: entry.accumulated + Math.floor((now - entry.startedAt) / 1000),
+          startedAt: null,
+        },
+      };
+    });
+  }
+
+  async function handleStartTask(taskId: string) {
+    // Stop current task locally
+    if (activeTaskId && activeTaskId !== taskId) {
+      stopTaskTimerLocally(activeTaskId);
+      await removeTaskFromSession(activeTaskId);
+    }
+    // Start new task
+    setTaskTimers((prev) => ({
+      ...prev,
+      [taskId]: { accumulated: prev[taskId]?.accumulated ?? 0, startedAt: Date.now() },
+    }));
+    setActiveTaskId(taskId);
+    await addTaskToSession(taskId);
+    if (!isRunning) {
+      await startSession();
+      start();
+    }
+  }
+
+  async function handleStopTask() {
+    if (!activeTaskId) return;
+    stopTaskTimerLocally(activeTaskId);
+    await removeTaskFromSession(activeTaskId);
+    setActiveTaskId(null);
+  }
 
   function getTaskElapsed(taskId: string): number {
-    const entry = taskTimes[taskId];
+    const entry = taskTimers[taskId];
     if (!entry) return 0;
     if (entry.startedAt !== null) {
       return entry.accumulated + Math.floor((Date.now() - entry.startedAt) / 1000);
@@ -47,112 +227,27 @@ export default function SessionsPage() {
     return entry.accumulated;
   }
 
-  function handleStartTask(taskId: string) {
-    const now = Date.now();
-    setTaskTimes((prev) => {
-      const next = { ...prev };
-      if (activeTaskId !== null && next[activeTaskId]?.startedAt !== null) {
-        next[activeTaskId] = {
-          accumulated: next[activeTaskId].accumulated + Math.floor((now - next[activeTaskId].startedAt!) / 1000),
-          startedAt: null,
-        };
-      }
-      next[taskId] = { accumulated: next[taskId]?.accumulated ?? 0, startedAt: now };
-      return next;
-    });
-    setActiveTaskId(taskId);
-    if (!isRunning) start();
-  }
-
-  function handleStopTask() {
-    if (activeTaskId === null) return;
-    const now = Date.now();
-    setTaskTimes((prev) => ({
-      ...prev,
-      [activeTaskId]: {
-        accumulated: prev[activeTaskId].accumulated + Math.floor((now - prev[activeTaskId].startedAt!) / 1000),
-        startedAt: null,
-      },
-    }));
-    setActiveTaskId(null);
-  }
-
-  function handlePauseSession() {
-    pause();
-    handleStopTask();
-  }
-
-  function handleBeginSession() {
-    if (!pickerProjectId) return;
-    const project = getProject(pickerProjectId);
-    const init: TaskTimeState = {};
-    project?.tasks.forEach((t) => { init[t.id] = { accumulated: 0, startedAt: null }; });
-    setActiveProjectId(pickerProjectId);
-    setTaskTimes(init);
-    setActiveTaskId(null);
-    setShowProjectPicker(false);
-    setMode('focus');
-    start();
-  }
-
-  function handleEndSession() {
-    pause();
-    const now = Date.now();
-    const finalTaskTimes = { ...taskTimes };
-    if (activeTaskId && finalTaskTimes[activeTaskId]?.startedAt !== null) {
-      finalTaskTimes[activeTaskId] = {
-        accumulated: finalTaskTimes[activeTaskId].accumulated + Math.floor((now - finalTaskTimes[activeTaskId].startedAt!) / 1000),
-        startedAt: null,
-      };
-    }
-    const project  = getProject(activeProjectId);
-    const summary: TaskTimeEntry[] = project?.tasks.map((t) => ({
-      taskId: t.id,
-      taskName: t.name,
-      accumulated: finalTaskTimes[t.id]?.accumulated ?? 0,
-    })) ?? [];
-    setSummaryElapsed(elapsed);
-    setSummaryData(summary);
-    setActiveTaskId(null);
-    setShowSummary(true);
-  }
-
-  function handleDone() {
-    setShowSummary(false);
-    setMode('list');
-    reset();
-    setActiveProjectId('');
-    setTaskTimes({});
-    setActiveTaskId(null);
-  }
-
-  function handleAddTaskInFocus(e: React.FormEvent) {
+  async function handleAddTaskInFocus(e: React.FormEvent) {
     e.preventDefault();
-    if (!newTaskName.trim()) return;
-    addTask(activeProjectId, newTaskName.trim(), newTaskDesc.trim());
+    if (!newTaskName.trim() || !activeProjectId) return;
+    const res = await createTask(activeProjectId, newTaskName.trim(), newTaskDesc.trim());
+    if (res.error || !res.data) return;
+    const newTask = res.data;
+    setTasks((prev) => [...prev, newTask]);
+    setTaskTimers((prev) => ({ ...prev, [newTask._id]: { accumulated: 0, startedAt: null } }));
     setNewTaskName('');
     setNewTaskDesc('');
     setShowAddTask(false);
   }
 
-  // Initialize timer state for any newly added tasks in focus mode
-  useEffect(() => {
-    if (mode !== 'focus' || !activeProject) return;
-    const hasNew = activeProject.tasks.some((t) => !(t.id in taskTimes));
-    if (!hasNew) return;
-    setTaskTimes((prev) => {
-      const next = { ...prev };
-      for (const task of activeProject.tasks) {
-        if (!(task.id in next)) next[task.id] = { accumulated: 0, startedAt: null };
-      }
-      return next;
-    });
-  }, [activeProject?.tasks.length, mode, activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function openProjectPicker() {
-    setPickerProjectId(projects[0]?.id ?? '');
+    if (projects.length > 0) setPickerProjectId(projects[0]._id);
     setShowProjectPicker(true);
   }
+
+  const sessionStats = computeSessionStats(sessions);
+  // Filter out active sessions from the log (they have no endDate)
+  const completedSessions = sessions.filter((s) => !!s.endDate);
 
   return (
     <>
@@ -193,10 +288,14 @@ export default function SessionsPage() {
             <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
           </div>
 
-          {MOCK_SESSIONS.length > 0 ? (
+          {loadingSessions ? (
             <div className="flex flex-col gap-2">
-              {MOCK_SESSIONS.map((session, i) => (
-                <SessionLogItem key={session.id} session={session} index={i} />
+              {[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-2xl bg-surface-container-low animate-pulse" />)}
+            </div>
+          ) : completedSessions.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {completedSessions.slice().reverse().map((session, i) => (
+                <SessionLogItem key={session._id} session={session} index={i} />
               ))}
             </div>
           ) : (
@@ -225,15 +324,12 @@ export default function SessionsPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
               <p className="font-display text-sm font-bold text-white/80">{activeProject?.title ?? 'Session'}</p>
             </div>
-            <span className="font-body text-[0.6rem] text-white/25 uppercase tracking-[0.12em]">
-              Focus Mode
-            </span>
+            <span className="font-body text-[0.6rem] text-white/25 uppercase tracking-[0.12em]">Focus Mode</span>
           </div>
           <div className="mx-8 h-px bg-white/6" />
 
           {/* Timer */}
           <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8">
-            {/* Status */}
             <div className="h-5 flex items-center">
               {isRunning ? (
                 <div className="flex items-center gap-1.5">
@@ -245,7 +341,6 @@ export default function SessionsPage() {
               )}
             </div>
 
-            {/* Big clock */}
             <p
               className="font-display font-bold text-white leading-none tabular-nums"
               style={{ fontSize: 'clamp(3.5rem, 11vw, 7.5rem)' }}
@@ -253,10 +348,9 @@ export default function SessionsPage() {
               {formattedTime}
             </p>
 
-            {/* Controls */}
             <div className="flex items-center gap-3 mt-1">
               <button
-                onClick={isRunning ? handlePauseSession : start}
+                onClick={isRunning ? handlePauseSession : handleResumeSession}
                 className="flex items-center gap-2 rounded-xl px-5 py-2.5 font-body text-sm font-medium
                   bg-white/8 text-white/70 hover:bg-white/14 hover:text-white
                   transition-all duration-150 cursor-pointer border border-white/10"
@@ -348,14 +442,14 @@ export default function SessionsPage() {
               </form>
             )}
 
-            {activeProject && activeProject.tasks.length > 0 ? (
+            {tasks.length > 0 ? (
               <div className="flex flex-col gap-2">
-                {activeProject.tasks.map((task) => {
-                  const isActive    = activeTaskId === task.id;
-                  const taskElapsed = getTaskElapsed(task.id);
+                {tasks.map((task) => {
+                  const isActive    = activeTaskId === task._id;
+                  const taskElapsed = getTaskElapsed(task._id);
                   return (
                     <div
-                      key={task.id}
+                      key={task._id}
                       className={`flex items-center justify-between rounded-xl px-4 py-3.5 transition-all duration-200 ${
                         isActive ? 'bg-primary/18 ring-1 ring-primary/30' : 'bg-white/5'
                       }`}
@@ -385,7 +479,7 @@ export default function SessionsPage() {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleStartTask(task.id)}
+                            onClick={() => handleStartTask(task._id)}
                             className="rounded-lg px-3 py-1.5 font-body text-xs cursor-pointer
                               bg-primary/20 text-primary hover:bg-primary/30 transition-all"
                           >
@@ -420,11 +514,11 @@ export default function SessionsPage() {
             <div className="flex flex-col gap-1.5 mb-6 max-h-60 overflow-y-auto">
               {projects.map((p) => (
                 <button
-                  key={p.id}
-                  onClick={() => setPickerProjectId(p.id)}
+                  key={p._id}
+                  onClick={() => setPickerProjectId(p._id)}
                   className={`w-full text-left px-4 py-3 rounded-xl font-body text-sm font-medium
                     transition-all duration-150 cursor-pointer ${
-                      pickerProjectId === p.id
+                      pickerProjectId === p._id
                         ? 'bg-primary/12 text-primary ring-1 ring-primary/25'
                         : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
                     }`}
@@ -458,15 +552,18 @@ export default function SessionsPage() {
               Time per task
             </p>
             <div className="flex flex-col gap-2.5 mb-6">
-              {summaryData.length > 0 ? (
-                summaryData.map((entry) => (
-                  <div key={entry.taskId} className="flex items-center justify-between">
-                    <span className="font-body text-sm text-on-surface">{entry.taskName}</span>
-                    <span className="font-body text-sm text-primary font-semibold tabular-nums">
-                      {formatSeconds(entry.accumulated)}
-                    </span>
-                  </div>
-                ))
+              {tasks.length > 0 ? (
+                tasks.map((task) => {
+                  const secs = getTaskElapsed(task._id);
+                  return secs > 0 ? (
+                    <div key={task._id} className="flex items-center justify-between">
+                      <span className="font-body text-sm text-on-surface">{task.name}</span>
+                      <span className="font-body text-sm text-primary font-semibold tabular-nums">
+                        {formatSeconds(secs)}
+                      </span>
+                    </div>
+                  ) : null;
+                })
               ) : (
                 <p className="font-body text-sm text-on-surface/35">No tasks were tracked.</p>
               )}

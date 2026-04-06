@@ -1,41 +1,29 @@
+import { useState, useEffect } from 'react';
 import ActivityHeatmap from '../components/ActivityHeatmap.tsx';
 import StatCard from '../components/StatCard.tsx';
-import { MOCK_SESSIONS, computeStats, computeHeatmap } from '../data/mock.ts';
-import { useProjects } from '../hooks/useProjects.ts';
-
-function ComingSoonCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="bg-surface-container-low rounded-2xl p-6 flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="font-body text-[0.6rem] font-semibold tracking-[0.1em] uppercase
-          text-on-surface/30 bg-surface-container px-2 py-1 rounded-md">
-          Coming soon
-        </span>
-      </div>
-      <h3 className="font-display text-base font-bold text-on-surface/50">{title}</h3>
-      <p className="font-body text-sm text-on-surface/35 leading-relaxed">{description}</p>
-      {/* Placeholder chart skeleton */}
-      <div className="mt-2 h-24 rounded-xl bg-surface-container flex items-end gap-1.5 px-3 pb-3 overflow-hidden">
-        {[40, 60, 35, 75, 50, 85, 45, 65, 30, 70].map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-sm bg-surface-container-highest opacity-60"
-            style={{ height: `${h}%` }}
-          />
-        ))}
-      </div>
-      <p className="font-body text-[0.65rem] text-on-surface/25 text-center">
-        {/* TODO: Connect to backend endpoint -> Expected Payload: { sessions: Session[], projects: Project[] } */}
-        Data visualization available after connecting to backend
-      </p>
-    </div>
-  );
-}
+import SessionLogItem from '../components/SessionLogItem.tsx';
+import { computeStats, computeHeatmap } from '../data/mock.ts';
+import { listSessions, listProjects } from '../api/queries.ts';
+import type { SessionMetadata, ProjectMetadata } from '../types/index.ts';
 
 export default function InsightsPage() {
-  const { projects } = useProjects();
-  const stats        = computeStats(MOCK_SESSIONS, projects.length);
-  const heatmapCells = computeHeatmap(MOCK_SESSIONS);
+  const [sessions,  setSessions]  = useState<SessionMetadata[]>([]);
+  const [projects,  setProjects]  = useState<ProjectMetadata[]>([]);
+  const [loading,   setLoading]   = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const [sessRes, projRes] = await Promise.all([listSessions(), listProjects()]);
+      setSessions(sessRes.data ?? []);
+      setProjects(projRes.data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const completedSessions = sessions.filter((s) => !!s.endDate);
+  const stats        = computeStats(completedSessions, projects.length);
+  const heatmapCells = computeHeatmap(completedSessions);
 
   return (
     <div className="animate-fade-up">
@@ -49,9 +37,10 @@ export default function InsightsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8 stagger-1 animate-fade-up">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
+        {loading
+          ? [1, 2, 3].map((i) => <div key={i} className="h-24 rounded-2xl bg-surface-container-low animate-pulse" />)
+          : stats.map((stat) => <StatCard key={stat.label} {...stat} />)
+        }
       </div>
 
       {/* Heatmap */}
@@ -59,19 +48,49 @@ export default function InsightsPage() {
         <ActivityHeatmap cells={heatmapCells} />
       </div>
 
-      {/* Coming soon charts */}
-      <div className="stagger-3 animate-fade-up">
-        <h2 className="font-display text-lg font-bold text-on-surface mb-4">Analytics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ComingSoonCard
-            title="Project Breakdown"
-            description="Per-project time allocation and trend analysis."
-          />
-          <ComingSoonCard
-            title="Session Patterns"
-            description="Your peak focus hours and optimal work windows."
-          />
+      {/* Projects breakdown */}
+      {!loading && projects.length > 0 && (
+        <div className="stagger-3 animate-fade-up mb-8">
+          <h2 className="font-display text-lg font-bold text-on-surface mb-4">Projects</h2>
+          <div className="flex flex-col gap-2">
+            {projects.map((project) => {
+              const hrs = (project.totalTime / 3600).toFixed(1);
+              return (
+                <div key={project._id} className="bg-surface-container-low rounded-2xl px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-body text-sm font-semibold text-on-surface">{project.title}</p>
+                    {project.startDate && (
+                      <p className="font-body text-xs text-on-surface/35 mt-0.5">
+                        Started {new Date(project.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                  <span className="font-display text-base font-bold text-primary">{hrs}h</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      {/* Recent sessions list */}
+      <div className="stagger-4 animate-fade-up">
+        <h2 className="font-display text-lg font-bold text-on-surface mb-4">Session History</h2>
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-2xl bg-surface-container-low animate-pulse" />)}
+          </div>
+        ) : completedSessions.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {completedSessions.slice().reverse().map((session, i) => (
+              <SessionLogItem key={session._id} session={session} index={i} linkable />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-surface-container-low rounded-2xl p-10 text-center">
+            <p className="font-body text-sm text-on-surface/40">No sessions recorded yet.</p>
+          </div>
+        )}
       </div>
     </div>
   );

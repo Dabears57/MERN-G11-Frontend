@@ -1,10 +1,13 @@
+import { useState, useEffect } from 'react';
 import StatCard from '../components/StatCard.tsx';
 import ActivityHeatmap from '../components/ActivityHeatmap.tsx';
 import ActiveProjectsPanel from '../components/ActiveProjectsPanel.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
-import { MOCK_SESSIONS, computeStats, computeHeatmap } from '../data/mock.ts';
-import { useProjects } from '../hooks/useProjects.ts';
+import { computeStats, computeHeatmap } from '../data/mock.ts';
+import { listSessions } from '../api/queries.ts';
+import { fetchProjects } from '../api/projects.ts';
 import { getUserName } from '../hooks/useAuth.ts';
+import type { SessionMetadata, ApiProject } from '../types/index.ts';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -14,14 +17,28 @@ function getGreeting(): string {
 }
 
 export default function DashboardPage() {
-  const { projects } = useProjects();
-  const userName     = getUserName();
-  const todayLabel   = new Date().toLocaleDateString('en-US', {
+  const [sessions,  setSessions]  = useState<SessionMetadata[]>([]);
+  const [projects,  setProjects]  = useState<ApiProject[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const userName  = getUserName();
+  const todayLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
-  const stats        = computeStats(MOCK_SESSIONS, projects.length);
-  const heatmapCells = computeHeatmap(MOCK_SESSIONS);
+  useEffect(() => {
+    async function load() {
+      const [sessRes, projRes] = await Promise.all([listSessions(), fetchProjects()]);
+      setSessions(sessRes.data ?? []);
+      setProjects(projRes.data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const completedSessions = sessions.filter((s) => !!s.endDate);
+  const stats        = computeStats(completedSessions, projects.length);
+  const heatmapCells = computeHeatmap(completedSessions);
+  const recentSessions = completedSessions.slice().reverse().slice(0, 10);
 
   return (
     <div className="animate-fade-up">
@@ -35,12 +52,13 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4 mb-8 stagger-1 animate-fade-up">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
+        {loading
+          ? [1, 2, 3].map((i) => <div key={i} className="h-24 rounded-2xl bg-surface-container-low animate-pulse" />)
+          : stats.map((stat) => <StatCard key={stat.label} {...stat} />)
+        }
       </div>
 
-      {/* Main grid: heatmap + sidebar */}
+      {/* Main grid */}
       <div className="grid grid-cols-[1fr_272px] gap-6">
         {/* Left column */}
         <div className="min-w-0 flex flex-col gap-8">
@@ -55,10 +73,14 @@ export default function DashboardPage() {
               <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
             </div>
 
-            {MOCK_SESSIONS.length > 0 ? (
+            {loading ? (
               <div className="flex flex-col gap-2">
-                {MOCK_SESSIONS.map((session, i) => (
-                  <SessionLogItem key={session.id} session={session} index={i} />
+                {[1, 2].map((i) => <div key={i} className="h-16 rounded-2xl bg-surface-container-low animate-pulse" />)}
+              </div>
+            ) : recentSessions.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {recentSessions.map((session, i) => (
+                  <SessionLogItem key={session._id} session={session} index={i} />
                 ))}
               </div>
             ) : (
@@ -78,7 +100,7 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <div className="min-w-0 stagger-4 animate-fade-up">
-          <ActiveProjectsPanel projects={projects} />
+          <ActiveProjectsPanel projects={projects} loading={loading} />
         </div>
       </div>
     </div>

@@ -1,43 +1,117 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
-import { useProjects } from '../hooks/useProjects.ts';
+import { getFullProject } from '../api/queries.ts';
+import { createTask, deleteTask } from '../api/tasks.ts';
+import { createNote, deleteNote } from '../api/notes.ts';
+import { formatDuration } from '../data/mock.ts';
+import type { ApiTask, ApiNote, FullProject } from '../types/index.ts';
+
+function formatSeconds(s: number): string {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
 
 export default function ProjectDetailPage() {
-  const { id }                = useParams<{ id: string }>();
-  const { getProject, addTask } = useProjects();
-  const project               = getProject(id ?? '');
+  const { id } = useParams<{ id: string }>();
 
+  const [data,          setData]          = useState<FullProject | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState('');
+
+  // task modal
   const [showTaskModal,  setShowTaskModal]  = useState(false);
   const [taskName,       setTaskName]       = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
+  const [taskDesc,       setTaskDesc]       = useState('');
+  const [taskSaving,     setTaskSaving]     = useState(false);
 
-  function handleAddTask(e: React.FormEvent) {
+  // notes
+  const [noteContent,    setNoteContent]    = useState('');
+  const [noteTarget,     setNoteTarget]     = useState<{ type: ApiNote['parentType']; id: string } | null>(null);
+  const [noteSaving,     setNoteSaving]     = useState(false);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    const res = await getFullProject(id);
+    if (res.error || !res.data) { setError(res.error ?? 'Project not found'); setLoading(false); return; }
+    setData(res.data);
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAddTask(e: React.FormEvent) {
     e.preventDefault();
     if (!taskName.trim() || !id) return;
-    addTask(id, taskName.trim(), taskDescription.trim());
+    setTaskSaving(true);
+    const res = await createTask(id, taskName.trim(), taskDesc.trim());
+    setTaskSaving(false);
+    if (res.error) return;
     setTaskName('');
-    setTaskDescription('');
+    setTaskDesc('');
     setShowTaskModal(false);
+    load();
   }
 
-  function handleClose() {
-    setTaskName('');
-    setTaskDescription('');
-    setShowTaskModal(false);
+  async function handleDeleteTask(taskId: string) {
+    await deleteTask(taskId);
+    setData((prev) => prev ? { ...prev, tasks: prev.tasks.filter((t) => t._id !== taskId) } : prev);
   }
 
-  if (!project) {
+  async function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteContent.trim() || !noteTarget) return;
+    setNoteSaving(true);
+    const res = await createNote(noteContent.trim(), noteTarget.type, noteTarget.id);
+    setNoteSaving(false);
+    if (res.error || !res.data) return;
+    setNoteContent('');
+    setNoteTarget(null);
+    load();
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    await deleteNote(noteId);
+    setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== noteId) } : prev);
+  }
+
+  function openNoteFor(type: ApiNote['parentType'], targetId: string) {
+    setNoteTarget({ type, id: targetId });
+    setNoteContent('');
+  }
+
+  function notesFor(type: ApiNote['parentType'], targetId: string): ApiNote[] {
+    return (data?.notes ?? []).filter((n) => n.parentType === type && n.parentId === targetId);
+  }
+
+  if (loading) {
     return (
       <div className="animate-fade-up">
-        <h1 className="font-display text-xl font-bold text-on-surface mb-4">Project not found</h1>
+        <div className="h-8 w-48 rounded-xl bg-surface-container-low animate-pulse mb-6" />
+        <div className="h-12 w-72 rounded-xl bg-surface-container-low animate-pulse mb-8" />
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-2xl bg-surface-container-low animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="animate-fade-up">
+        <h1 className="font-display text-xl font-bold text-on-surface mb-4">{error || 'Project not found'}</h1>
         <Link to="/projects" className="font-body text-sm text-primary hover:underline">← Back to Projects</Link>
       </div>
     );
   }
 
-  const completedTasks = project.tasks.filter((t) => !!t.finishedDate).length;
+  const { project, tasks, sessions } = data;
+  const projectNotes = notesFor('project', project._id);
+  const totalSessionTime = sessions.reduce((acc, s) => acc + (s.totalTime ?? 0), 0);
 
   return (
     <div className="animate-fade-up">
@@ -55,47 +129,32 @@ export default function ProjectDetailPage() {
 
       {/* Title */}
       <div className="mb-7">
-        <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight">
-          {project.title}
-        </h1>
+        <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight">{project.title}</h1>
         {project.description && (
-          <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">
-            {project.description}
-          </p>
+          <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">{project.description}</p>
         )}
       </div>
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">
-            Progress
-          </p>
-          <p className="font-display text-2xl font-bold text-primary">{project.progress}%</p>
-          <div className="mt-2 w-full h-1 rounded-full bg-surface-container-highest overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${project.progress}%` }}
-            />
-          </div>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Tasks</p>
+          <p className="font-display text-2xl font-bold text-on-surface">{tasks.length}</p>
+          <p className="font-body text-xs text-on-surface/35 mt-0.5">total</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">
-            Time Spent
-          </p>
-          <p className="font-display text-2xl font-bold text-on-surface">{project.timeSpent}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">hours tracked</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Time Tracked</p>
+          <p className="font-display text-2xl font-bold text-on-surface">{formatSeconds(project.totalTime)}</p>
+          <p className="font-body text-xs text-on-surface/35 mt-0.5">across all sessions</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">
-            Tasks
-          </p>
-          <p className="font-display text-2xl font-bold text-on-surface">{completedTasks}/{project.tasks.length}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">completed</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Sessions</p>
+          <p className="font-display text-2xl font-bold text-on-surface">{sessions.length}</p>
+          <p className="font-body text-xs text-on-surface/35 mt-0.5">{formatSeconds(totalSessionTime)} total</p>
         </div>
       </div>
 
-      {/* Tasks header */}
+      {/* Tasks */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-bold text-on-surface">Tasks</h2>
         <Button size="sm" onClick={() => setShowTaskModal(true)}>
@@ -106,9 +165,8 @@ export default function ProjectDetailPage() {
         </Button>
       </div>
 
-      {/* Tasks list */}
-      {project.tasks.length === 0 ? (
-        <div className="bg-surface-container-low rounded-2xl p-10 text-center">
+      {tasks.length === 0 ? (
+        <div className="bg-surface-container-low rounded-2xl p-10 text-center mb-8">
           <div className="w-10 h-10 rounded-xl bg-surface-container mx-auto mb-3 flex items-center justify-center">
             <svg className="text-on-surface/20" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <polyline points="9 11 12 14 22 4" />
@@ -119,65 +177,68 @@ export default function ProjectDetailPage() {
           <Button size="sm" onClick={() => setShowTaskModal(true)}>Add your first task</Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {project.tasks.map((task) => {
-            const isDone = !!task.finishedDate;
+        <div className="flex flex-col gap-3 mb-8">
+          {tasks.map((task) => {
+            const taskNotes = notesFor('task', task._id);
             return (
-              <div
-                key={task.id}
-                className={`bg-surface-container-low rounded-2xl px-5 py-4 transition-all duration-200 ${
-                  isDone ? 'opacity-60' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4 mb-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 text-xs ${
-                      isDone ? 'bg-primary text-white' : 'bg-surface-container-highest'
-                    }`}>
-                      {isDone && (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                    <h3 className={`font-body text-sm font-semibold ${isDone ? 'line-through text-on-surface/40' : 'text-on-surface'}`}>
-                      {task.name}
-                    </h3>
-                  </div>
-                  <span className="font-body text-xs text-on-surface/35 shrink-0 mt-0.5">
-                    {Math.round(task.timeSpent / 60)} hrs
-                  </span>
-                </div>
-
-                {task.description && (
-                  <p className="font-body text-xs text-on-surface/50 mb-3 ml-6.5 leading-relaxed">
-                    {task.description}
-                  </p>
-                )}
-
-                {task.todos.length > 0 && (
-                  <div className="flex flex-col gap-1.5 ml-6.5 mt-2">
-                    {task.todos.map((todo) => (
-                      <label key={todo.id} className="flex items-center gap-2 font-body text-xs text-on-surface/60 cursor-default">
-                        <span className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 ${
-                          todo.completed ? 'bg-primary/80 text-white' : 'bg-surface-container'
-                        }`}>
-                          {todo.completed && (
-                            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </span>
-                        <span className={todo.completed ? 'line-through text-on-surface/30' : ''}>{todo.text}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <TaskItem
+                key={task._id}
+                task={task}
+                notes={taskNotes}
+                onDelete={handleDeleteTask}
+                onAddNote={() => openNoteFor('task', task._id)}
+                onDeleteNote={handleDeleteNote}
+              />
             );
           })}
         </div>
       )}
+
+      {/* Project Notes */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold text-on-surface">Notes</h2>
+          <Button size="sm" variant="ghost" onClick={() => openNoteFor('project', project._id)}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Note
+          </Button>
+        </div>
+
+        {noteTarget?.type === 'project' && noteTarget.id === project._id && (
+          <form onSubmit={handleAddNote} className="mb-4 bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3">
+            <textarea
+              autoFocus
+              placeholder="Write a note…"
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              rows={3}
+              className="bg-white rounded-xl px-4 py-3 font-body text-sm text-on-surface
+                outline-none ring-2 ring-transparent focus:ring-primary/30
+                transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+            />
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={!noteContent.trim() || noteSaving}>
+                {noteSaving ? 'Saving…' : 'Save'}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setNoteTarget(null)}>Cancel</Button>
+            </div>
+          </form>
+        )}
+
+        {projectNotes.length === 0 && noteTarget?.id !== project._id ? (
+          <div className="bg-surface-container-low rounded-2xl p-8 text-center">
+            <p className="font-body text-sm text-on-surface/35">No notes yet. Add a note above.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {projectNotes.map((note) => (
+              <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Add Task Modal */}
       {showTaskModal && (
@@ -187,7 +248,7 @@ export default function ProjectDetailPage() {
           aria-modal="true"
           aria-labelledby="task-modal-title"
         >
-          <div className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm" onClick={handleClose} />
+          <div className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm" onClick={() => setShowTaskModal(false)} />
           <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-md
             shadow-[0_24px_60px_rgba(26,28,28,0.14)] animate-scale-in">
             <h2 id="task-modal-title" className="font-display text-xl font-bold text-on-surface mb-5">Add Task</h2>
@@ -205,8 +266,8 @@ export default function ProjectDetailPage() {
                 </label>
                 <textarea
                   placeholder="Optional description"
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
+                  value={taskDesc}
+                  onChange={(e) => setTaskDesc(e.target.value)}
                   rows={3}
                   className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
                     outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
@@ -214,13 +275,122 @@ export default function ProjectDetailPage() {
                 />
               </div>
               <div className="flex items-center gap-2.5 pt-1">
-                <Button type="submit" disabled={!taskName.trim()}>Add Task</Button>
-                <Button variant="ghost" type="button" onClick={handleClose}>Cancel</Button>
+                <Button type="submit" disabled={!taskName.trim() || taskSaving}>
+                  {taskSaving ? 'Adding…' : 'Add Task'}
+                </Button>
+                <Button variant="ghost" type="button" onClick={() => setShowTaskModal(false)}>Cancel</Button>
               </div>
             </form>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+interface TaskItemProps {
+  task: ApiTask;
+  notes: ApiNote[];
+  onDelete: (id: string) => void;
+  onAddNote: () => void;
+  onDeleteNote: (id: string) => void;
+}
+
+function TaskItem({ task, notes, onDelete, onAddNote, onDeleteNote }: TaskItemProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-surface-container-low rounded-2xl overflow-hidden">
+      <div className="px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-4 h-4 rounded shrink-0 bg-surface-container-highest" />
+            <div className="min-w-0">
+              <h3 className="font-body text-sm font-semibold text-on-surface truncate">{task.name}</h3>
+              {task.description && (
+                <p className="font-body text-xs text-on-surface/50 mt-0.5 leading-relaxed">{task.description}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="font-body text-xs text-on-surface/35">
+              {formatDuration(task.totalTime)}
+            </span>
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+            >
+              {notes.length > 0 ? `${notes.length} note${notes.length !== 1 ? 's' : ''}` : 'Notes'}
+            </button>
+            <button
+              onClick={() => onDelete(task._id)}
+              className="font-body text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="px-5 pb-4 border-t border-surface-container-highest">
+          <div className="flex items-center justify-between mt-3 mb-2">
+            <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40">
+              Task Notes
+            </p>
+            <button
+              onClick={onAddNote}
+              className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+            >
+              + Add
+            </button>
+          </div>
+          {notes.length === 0 ? (
+            <p className="font-body text-xs text-on-surface/30">No notes for this task.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {notes.map((note) => (
+                <NoteItem key={note._id} note={note} onDelete={onDeleteNote} compact />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface NoteItemProps {
+  note: ApiNote;
+  onDelete: (id: string) => void;
+  compact?: boolean;
+}
+
+function NoteItem({ note, onDelete, compact }: NoteItemProps) {
+  const date = new Date(note.createdAt).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+
+  return (
+    <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex items-start justify-between gap-3`}>
+      <div className="min-w-0 flex-1">
+        <p className={`font-body text-on-surface leading-relaxed whitespace-pre-wrap ${compact ? 'text-xs' : 'text-sm'}`}>
+          {note.content}
+        </p>
+        <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
+      </div>
+      <button
+        onClick={() => onDelete(note._id)}
+        className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer mt-0.5"
+        aria-label="Delete note"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+      </button>
     </div>
   );
 }

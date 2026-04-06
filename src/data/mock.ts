@@ -1,14 +1,8 @@
-import type { Project, Session, HeatmapCell, StatCardData } from '../types/index.ts';
+import type { HeatmapCell, StatCardData, SessionMetadata } from '../types/index.ts';
 
-// TODO: Connect to backend endpoint -> Expected Payload: { projects: Project[] }
-export const MOCK_PROJECTS: Project[] = [];
-
-// TODO: Connect to backend endpoint -> Expected Payload: { sessions: Session[] }
-export const MOCK_SESSIONS: Session[] = [];
-
-// Compute a real activity heatmap from an array of sessions.
+// Compute a real activity heatmap from session metadata.
 // week 0 = oldest, week 3 = most recent; day 0 = MON, day 6 = SUN.
-export function computeHeatmap(sessions: Session[]): HeatmapCell[] {
+export function computeHeatmap(sessions: SessionMetadata[]): HeatmapCell[] {
   const cells: HeatmapCell[] = [];
   for (let week = 0; week < 4; week++) {
     for (let day = 0; day < 7; day++) {
@@ -20,15 +14,15 @@ export function computeHeatmap(sessions: Session[]): HeatmapCell[] {
   now.setHours(23, 59, 59, 999);
 
   for (const session of sessions) {
-    const d = new Date(session.startTime);
+    const dateStr = session.startDate;
+    if (!dateStr) continue;
+    const d = new Date(dateStr);
     const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0 || diffDays >= 28) continue;
 
-    // weekFromNewest: 0 = this week, 3 = 4 weeks ago
     const weekFromNewest = Math.floor(diffDays / 7);
     const week = 3 - weekFromNewest;
 
-    // JS getDay(): 0=Sun → heatmap 6; 1=Mon → heatmap 0; etc.
     const jsDay = d.getDay();
     const day = jsDay === 0 ? 6 : jsDay - 1;
 
@@ -39,19 +33,37 @@ export function computeHeatmap(sessions: Session[]): HeatmapCell[] {
   return cells;
 }
 
-// Compute dashboard/insights stat cards from real session + project data.
-export function computeStats(sessions: Session[], projectCount: number): StatCardData[] {
+// Compute session duration in seconds from metadata (endDate - startDate).
+export function sessionDurationSecs(session: SessionMetadata): number {
+  if (!session.startDate || !session.endDate) return 0;
+  return Math.max(0, Math.floor(
+    (new Date(session.endDate).getTime() - new Date(session.startDate).getTime()) / 1000
+  ));
+}
+
+// Format seconds as a human-readable string.
+export function formatDuration(secs: number): string {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// Compute dashboard/insights stat cards from session metadata + project count.
+export function computeStats(sessions: SessionMetadata[], projectCount: number): StatCardData[] {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const monthlySessions = sessions.filter((s) => new Date(s.startTime) >= monthStart);
+  const monthlySessions = sessions.filter((s) => {
+    if (!s.startDate) return false;
+    return new Date(s.startDate) >= monthStart;
+  });
 
-  let monthlyMins = 0;
+  let monthlySeconds = 0;
   for (const s of monthlySessions) {
-    const m = s.duration.match(/(?:(\d+)h\s*)?(?:(\d+)m)?/);
-    monthlyMins += (parseInt(m?.[1] ?? '0') || 0) * 60 + (parseInt(m?.[2] ?? '0') || 0);
+    monthlySeconds += sessionDurationSecs(s);
   }
-  const monthlyHours = monthlyMins / 60;
+  const monthlyHours = monthlySeconds / 3600;
 
   return [
     {
@@ -73,24 +85,21 @@ export function computeStats(sessions: Session[], projectCount: number): StatCar
 }
 
 // Compute session-page stat cards.
-export function computeSessionStats(sessions: Session[]): StatCardData[] {
+export function computeSessionStats(sessions: SessionMetadata[]): StatCardData[] {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthlySessions = sessions.filter((s) => new Date(s.startTime) >= monthStart);
+  const monthlySessions = sessions.filter((s) => {
+    if (!s.startDate) return false;
+    return new Date(s.startDate) >= monthStart;
+  });
 
-  let totalMins = 0;
+  let totalSecs = 0;
   for (const s of monthlySessions) {
-    const m = s.duration.match(/(?:(\d+)h\s*)?(?:(\d+)m)?/);
-    totalMins += (parseInt(m?.[1] ?? '0') || 0) * 60 + (parseInt(m?.[2] ?? '0') || 0);
+    totalSecs += sessionDurationSecs(s);
   }
-  const totalHours = totalMins / 60;
-  const avgMins = monthlySessions.length > 0 ? totalMins / monthlySessions.length : 0;
-  const avgLabel =
-    avgMins > 0
-      ? avgMins >= 60
-        ? `${Math.floor(avgMins / 60)}h ${Math.round(avgMins % 60)}m`
-        : `${Math.round(avgMins)}m`
-      : '—';
+  const totalHours = totalSecs / 3600;
+  const avgSecs = monthlySessions.length > 0 ? totalSecs / monthlySessions.length : 0;
+  const avgLabel = avgSecs > 0 ? formatDuration(avgSecs) : '—';
 
   return [
     {

@@ -1,28 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProjectCard from '../components/ProjectCard.tsx';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
-import { useProjects } from '../hooks/useProjects.ts';
+import { createProject, fetchProjects, deleteProject } from '../api/projects.ts';
+import type { ApiProject } from '../types/index.ts';
 
 export default function ProjectsPage() {
-  const { projects, addProject } = useProjects();
-  const [showModal,    setShowModal]    = useState(false);
-  const [title,        setTitle]        = useState('');
-  const [description,  setDescription]  = useState('');
+  const [projects,    setProjects]    = useState<ApiProject[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState('');
+  const [showModal,   setShowModal]   = useState(false);
+  const [title,       setTitle]       = useState('');
+  const [description, setDescription] = useState('');
+  const [saving,      setSaving]      = useState(false);
+  const [saveError,   setSaveError]   = useState('');
 
-  function handleSubmit(e: React.FormEvent) {
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetchProjects();
+    if (res.error) setError(res.error);
+    else setProjects(res.data ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    addProject(title.trim(), description.trim());
+    setSaving(true);
+    setSaveError('');
+    const res = await createProject(title.trim(), description.trim());
+    setSaving(false);
+    if (res.error) { setSaveError(res.error); return; }
     setTitle('');
     setDescription('');
     setShowModal(false);
+    load();
+  }
+
+  async function handleDelete(id: string) {
+    await deleteProject(id);
+    setProjects((prev) => prev.filter((p) => p._id !== id));
   }
 
   function handleClose() {
     setTitle('');
     setDescription('');
+    setSaveError('');
     setShowModal(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="animate-fade-up">
+        <div className="mb-8">
+          <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Projects</h1>
+        </div>
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-surface-container-low rounded-2xl h-32 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -47,8 +88,12 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Empty state */}
-      {projects.length === 0 ? (
+      {error ? (
+        <div className="bg-surface-container-low rounded-2xl p-10 text-center">
+          <p className="font-body text-sm text-on-surface/50 mb-4">Unable to load projects — {error}</p>
+          <Button size="sm" onClick={load}>Try again</Button>
+        </div>
+      ) : projects.length === 0 ? (
         <div className="bg-surface-container-low rounded-2xl p-16 text-center animate-fade-up stagger-1">
           <div className="w-14 h-14 rounded-2xl bg-surface-container mx-auto mb-5 flex items-center justify-center">
             <svg className="text-on-surface/20" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -69,12 +114,12 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {projects.map((project, i) => (
-            <ProjectCard key={project.id} project={project} index={i} />
+            <ProjectCard key={project._id} project={project} index={i} onDelete={handleDelete} />
           ))}
         </div>
       )}
 
-      {/* Modal */}
+      {/* New project modal */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
@@ -82,10 +127,7 @@ export default function ProjectsPage() {
           aria-modal="true"
           aria-labelledby="modal-title"
         >
-          <div
-            className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm"
-            onClick={handleClose}
-          />
+          <div className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm" onClick={handleClose} />
           <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-md
             shadow-[0_24px_60px_rgba(26,28,28,0.14)] animate-scale-in">
             <h2 id="modal-title" className="font-display text-xl font-bold text-on-surface mb-5">New Project</h2>
@@ -111,8 +153,13 @@ export default function ProjectsPage() {
                     transition-all duration-200 placeholder:text-on-surface/30 resize-none"
                 />
               </div>
+              {saveError && (
+                <p className="font-body text-sm text-red-600">{saveError}</p>
+              )}
               <div className="flex items-center gap-2.5 pt-1">
-                <Button type="submit" disabled={!title.trim()}>Create Project</Button>
+                <Button type="submit" disabled={!title.trim() || saving}>
+                  {saving ? 'Creating…' : 'Create Project'}
+                </Button>
                 <Button variant="ghost" type="button" onClick={handleClose}>Cancel</Button>
               </div>
             </form>

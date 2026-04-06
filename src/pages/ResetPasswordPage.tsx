@@ -8,6 +8,7 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token') ?? '';
+  const email = searchParams.get('email') ?? '';
 
   const [newPassword,     setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,10 +21,10 @@ export default function ResetPasswordPage() {
 
     if (newPassword.length < 6)          { setError('Password must be at least 6 characters'); return; }
     if (newPassword !== confirmPassword)  { setError('Passwords do not match'); return; }
-    if (!token)                           { setError('Invalid reset link. Please request a new one.'); return; }
+    if (!token || !email)                 { setError('Invalid reset link. Please request a new one.'); return; }
 
     setLoading(true);
-    const result = await resetPassword(token, newPassword);
+    const result = await resetPassword(email, token, newPassword);
     setLoading(false);
 
     if (result.success) {

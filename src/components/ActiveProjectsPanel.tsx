@@ -1,11 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import type { Project } from '../types/index.ts';
+import type { ApiProject } from '../types/index.ts';
 
 interface ActiveProjectsPanelProps {
-  projects: Project[];
+  projects: ApiProject[];
+  loading?: boolean;
 }
 
-export default function ActiveProjectsPanel({ projects }: ActiveProjectsPanelProps) {
+function formatHours(secs: number): string {
+  const h = secs / 3600;
+  return h < 0.1 ? '0h' : `${h.toFixed(1)}h`;
+}
+
+export default function ActiveProjectsPanel({ projects, loading }: ActiveProjectsPanelProps) {
   const navigate = useNavigate();
 
   return (
@@ -25,11 +31,13 @@ export default function ActiveProjectsPanel({ projects }: ActiveProjectsPanelPro
 
       {/* Project list */}
       <div className="flex flex-col gap-4 flex-1 mb-5">
-        {projects.length === 0 ? (
+        {loading ? (
+          [1, 2].map((i) => (
+            <div key={i} className="h-10 rounded-lg bg-white/8 animate-pulse" />
+          ))
+        ) : projects.length === 0 ? (
           <div className="py-6 text-center">
-            <p className="font-body text-sm text-white/25 leading-relaxed">
-              No projects yet.
-            </p>
+            <p className="font-body text-sm text-white/25 leading-relaxed">No projects yet.</p>
             <button
               onClick={() => navigate('/projects')}
               className="mt-3 font-body text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
@@ -40,27 +48,23 @@ export default function ActiveProjectsPanel({ projects }: ActiveProjectsPanelPro
         ) : (
           projects.slice(0, 5).map((project) => (
             <div
-              key={project.id}
-              onClick={() => navigate(`/projects/${project.id}`)}
+              key={project._id}
+              onClick={() => navigate(`/projects/${project._id}`)}
               className="cursor-pointer group"
             >
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-1">
                 <span className="font-body text-xs font-medium text-white/75 truncate mr-2 group-hover:text-white transition-colors">
                   {project.title}
                 </span>
                 <span className="font-body text-[0.65rem] text-primary shrink-0 font-semibold">
-                  {project.progress}%
+                  {formatHours(project.totalTime)}
                 </span>
               </div>
-              <div className="w-full h-1 rounded-full bg-white/8 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.max(project.progress, 0)}%` }}
-                />
-              </div>
-              <p className="font-body text-[0.6rem] text-white/25 mt-1.5">
-                {project.timeSpent} hrs &middot; {project.tasks.length} task{project.tasks.length !== 1 ? 's' : ''}
-              </p>
+              {project.startDate && (
+                <p className="font-body text-[0.6rem] text-white/25">
+                  Started {new Date(project.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              )}
             </div>
           ))
         )}

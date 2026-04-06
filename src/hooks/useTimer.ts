@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseTimerOptions {
+  initialElapsed?: number;
   onStart?: () => void;
   onPause?: () => void;
   onEnd?: (elapsed: number) => void;
 }
 
 export function useTimer(options: UseTimerOptions = {}) {
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(options.initialElapsed ?? 0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -49,9 +50,13 @@ export function useTimer(options: UseTimerOptions = {}) {
     options.onPause?.();
   }, [options]);
 
-  const reset = useCallback(() => {
+  const reset = useCallback((newElapsed = 0) => {
     setIsRunning(false);
-    setElapsed(0);
+    setElapsed(newElapsed);
+  }, []);
+
+  const syncElapsed = useCallback((value: number) => {
+    setElapsed(value);
   }, []);
 
   const end = useCallback(() => {
@@ -59,5 +64,5 @@ export function useTimer(options: UseTimerOptions = {}) {
     options.onEnd?.(elapsed);
   }, [options, elapsed]);
 
-  return { elapsed, isRunning, formattedTime, start, pause, reset, end };
+  return { elapsed, isRunning, formattedTime, start, pause, reset, syncElapsed, end };
 }
