@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
 import { getFullProject } from '../api/queries.ts';
@@ -17,21 +17,22 @@ function formatSeconds(s: number): string {
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-  const [data,          setData]          = useState<FullProject | null>(null);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState('');
+  const [data,         setData]         = useState<FullProject | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
 
   // task modal
-  const [showTaskModal,  setShowTaskModal]  = useState(false);
-  const [taskName,       setTaskName]       = useState('');
-  const [taskDesc,       setTaskDesc]       = useState('');
-  const [taskSaving,     setTaskSaving]     = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskName,      setTaskName]      = useState('');
+  const [taskDesc,      setTaskDesc]      = useState('');
+  const [taskSaving,    setTaskSaving]    = useState(false);
 
-  // notes
-  const [noteContent,    setNoteContent]    = useState('');
-  const [noteTarget,     setNoteTarget]     = useState<{ type: ApiNote['parentType']; id: string } | null>(null);
-  const [noteSaving,     setNoteSaving]     = useState(false);
+  // project-level notes
+  const [noteContent,  setNoteContent]  = useState('');
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteSaving,   setNoteSaving]   = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -62,26 +63,28 @@ export default function ProjectDetailPage() {
     setData((prev) => prev ? { ...prev, tasks: prev.tasks.filter((t) => t._id !== taskId) } : prev);
   }
 
-  async function handleAddNote(e: React.FormEvent) {
+  async function handleAddProjectNote(e: React.FormEvent) {
     e.preventDefault();
-    if (!noteContent.trim() || !noteTarget) return;
+    if (!noteContent.trim() || !id) return;
     setNoteSaving(true);
-    const res = await createNote(noteContent.trim(), noteTarget.type, noteTarget.id);
+    const res = await createNote(noteContent.trim(), 'project', id);
     setNoteSaving(false);
     if (res.error || !res.data) return;
     setNoteContent('');
-    setNoteTarget(null);
+    setShowNoteForm(false);
     load();
+  }
+
+  async function handleAddTaskNote(taskId: string, content: string): Promise<boolean> {
+    const res = await createNote(content, 'task', taskId);
+    if (res.error) return false;
+    load();
+    return true;
   }
 
   async function handleDeleteNote(noteId: string) {
     await deleteNote(noteId);
     setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== noteId) } : prev);
-  }
-
-  function openNoteFor(type: ApiNote['parentType'], targetId: string) {
-    setNoteTarget({ type, id: targetId });
-    setNoteContent('');
   }
 
   function notesFor(type: ApiNote['parentType'], targetId: string): ApiNote[] {
@@ -127,12 +130,24 @@ export default function ProjectDetailPage() {
         Projects
       </Link>
 
-      {/* Title */}
-      <div className="mb-7">
-        <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight">{project.title}</h1>
-        {project.description && (
-          <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">{project.description}</p>
-        )}
+      {/* Title + Start Session */}
+      <div className="flex items-start justify-between gap-4 mb-7">
+        <div className="min-w-0">
+          <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight break-words">{project.title}</h1>
+          {project.description && (
+            <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">{project.description}</p>
+          )}
+        </div>
+        <div className="shrink-0 pt-2">
+          <Button
+            onClick={() => navigate('/sessions', { state: { projectId: project._id } })}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Start Session
+          </Button>
+        </div>
       </div>
 
       {/* Stats strip */}
@@ -186,7 +201,7 @@ export default function ProjectDetailPage() {
                 task={task}
                 notes={taskNotes}
                 onDelete={handleDeleteTask}
-                onAddNote={() => openNoteFor('task', task._id)}
+                onSubmitNote={handleAddTaskNote}
                 onDeleteNote={handleDeleteNote}
               />
             );
@@ -198,7 +213,7 @@ export default function ProjectDetailPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-xl font-bold text-on-surface">Notes</h2>
-          <Button size="sm" variant="ghost" onClick={() => openNoteFor('project', project._id)}>
+          <Button size="sm" variant="ghost" onClick={() => setShowNoteForm((v) => !v)}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -206,8 +221,8 @@ export default function ProjectDetailPage() {
           </Button>
         </div>
 
-        {noteTarget?.type === 'project' && noteTarget.id === project._id && (
-          <form onSubmit={handleAddNote} className="mb-4 bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3">
+        {showNoteForm && (
+          <form onSubmit={handleAddProjectNote} className="mb-4 bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3">
             <textarea
               autoFocus
               placeholder="Write a note…"
@@ -222,12 +237,12 @@ export default function ProjectDetailPage() {
               <Button type="submit" size="sm" disabled={!noteContent.trim() || noteSaving}>
                 {noteSaving ? 'Saving…' : 'Save'}
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setNoteTarget(null)}>Cancel</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setShowNoteForm(false); setNoteContent(''); }}>Cancel</Button>
             </div>
           </form>
         )}
 
-        {projectNotes.length === 0 && noteTarget?.id !== project._id ? (
+        {projectNotes.length === 0 && !showNoteForm ? (
           <div className="bg-surface-container-low rounded-2xl p-8 text-center">
             <p className="font-body text-sm text-on-surface/35">No notes yet. Add a note above.</p>
           </div>
@@ -294,15 +309,30 @@ interface TaskItemProps {
   task: ApiTask;
   notes: ApiNote[];
   onDelete: (id: string) => void;
-  onAddNote: () => void;
+  onSubmitNote: (taskId: string, content: string) => Promise<boolean>;
   onDeleteNote: (id: string) => void;
 }
 
-function TaskItem({ task, notes, onDelete, onAddNote, onDeleteNote }: TaskItemProps) {
-  const [expanded, setExpanded] = useState(false);
+function TaskItem({ task, notes, onDelete, onSubmitNote, onDeleteNote }: TaskItemProps) {
+  const [expanded,     setExpanded]     = useState(false);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteContent,  setNoteContent]  = useState('');
+  const [noteSaving,   setNoteSaving]   = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteContent.trim()) return;
+    setNoteSaving(true);
+    const ok = await onSubmitNote(task._id, noteContent.trim());
+    setNoteSaving(false);
+    if (ok) {
+      setNoteContent('');
+      setShowNoteForm(false);
+    }
+  }
 
   return (
-    <div className="bg-surface-container-low rounded-2xl overflow-hidden">
+    <div className="bg-surface-container-low rounded-2xl">
       <div className="px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -341,13 +371,47 @@ function TaskItem({ task, notes, onDelete, onAddNote, onDeleteNote }: TaskItemPr
               Task Notes
             </p>
             <button
-              onClick={onAddNote}
+              onClick={() => { setShowNoteForm((v) => !v); setNoteContent(''); }}
               className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
             >
               + Add
             </button>
           </div>
-          {notes.length === 0 ? (
+
+          {showNoteForm && (
+            <form onSubmit={handleSubmit} className="mb-3 bg-surface-container rounded-xl p-3 flex flex-col gap-2">
+              <textarea
+                autoFocus
+                placeholder="Write a note for this task…"
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                rows={2}
+                className="bg-white rounded-lg px-3 py-2 font-body text-xs text-on-surface
+                  outline-none ring-2 ring-transparent focus:ring-primary/30
+                  transition-all duration-200 placeholder:text-on-surface/30 resize-none w-full"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!noteContent.trim() || noteSaving}
+                  className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                    bg-primary text-white hover:bg-primary-container transition-all
+                    disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {noteSaving ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNoteForm(false); setNoteContent(''); }}
+                  className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          {notes.length === 0 && !showNoteForm ? (
             <p className="font-body text-xs text-on-surface/30">No notes for this task.</p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -376,7 +440,7 @@ function NoteItem({ note, onDelete, compact }: NoteItemProps) {
   return (
     <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex items-start justify-between gap-3`}>
       <div className="min-w-0 flex-1">
-        <p className={`font-body text-on-surface leading-relaxed whitespace-pre-wrap ${compact ? 'text-xs' : 'text-sm'}`}>
+        <p className={`font-body text-on-surface leading-relaxed whitespace-pre-wrap break-words ${compact ? 'text-xs' : 'text-sm'}`}>
           {note.content}
         </p>
         <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
