@@ -90,7 +90,7 @@ export default function InsightProjectPage() {
     .map(t => ({ label: t.name, value: t.totalTime }));
 
   // Session bar data (last 12 sessions)
-  const sessionBarData = completedSessions.slice(-12).map((s, i) => ({
+  const sessionBarData = completedSessions.slice(-12).map((s) => ({
     label: `#${completedSessions.indexOf(s) + 1}`,
     value: s.totalTime / 3600,
     highlight: false,

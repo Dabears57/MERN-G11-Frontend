@@ -554,7 +554,7 @@ export default function SessionsPage() {
                 <div className="flex items-center justify-between mb-4 shrink-0">
                   <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/30 font-semibold">Notes</p>
                   <button
-                    onClick={() => { setShowNoteForm((v) => !v); setEditingNoteId(null); }}
+                    onClick={() => setShowNoteForm((v) => !v)}
                     className="flex items-center gap-1 font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
                   >
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
