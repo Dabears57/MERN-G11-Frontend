@@ -84,6 +84,71 @@ export function computeStats(sessions: SessionMetadata[], projectCount: number):
   ];
 }
 
+// Compute weekly hours from session metadata. Returns `numWeeks` entries oldest→newest.
+export function computeWeeklyHours(
+  sessions: SessionMetadata[],
+  numWeeks = 8,
+): Array<{ label: string; hours: number }> {
+  const result: Array<{ label: string; hours: number }> = [];
+  const now = new Date();
+
+  // Anchor to this week's Monday
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  for (let i = numWeeks - 1; i >= 0; i--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToMonday - i * 7);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    let secs = 0;
+    for (const s of sessions) {
+      if (!s.startDate) continue;
+      const d = new Date(s.startDate);
+      if (d >= weekStart && d < weekEnd) secs += sessionDurationSecs(s);
+    }
+
+    const label =
+      i === 0
+        ? 'This wk'
+        : weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    result.push({ label, hours: Math.round((secs / 3600) * 10) / 10 });
+  }
+
+  return result;
+}
+
+// Total hours tracked across all sessions.
+export function computeTotalHours(sessions: SessionMetadata[]): number {
+  return sessions.reduce((sum, s) => sum + sessionDurationSecs(s), 0) / 3600;
+}
+
+// Current consecutive-day streak (days ending today with at least one session).
+export function computeStreak(sessions: SessionMetadata[]): number {
+  const dates = new Set(
+    sessions
+      .filter(s => !!s.startDate)
+      .map(s => new Date(s.startDate!).toDateString()),
+  );
+
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    if (dates.has(d.toDateString())) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 // Compute session-page stat cards.
 export function computeSessionStats(sessions: SessionMetadata[]): StatCardData[] {
   const now = new Date();

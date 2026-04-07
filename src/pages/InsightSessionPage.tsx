@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from 'react-router-dom';
 import { getFullSession } from '../api/queries.ts';
 import { createNote, fetchNotesFor, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
+import HorizontalBars from '../components/HorizontalBars.tsx';
 import type { FullSession, ApiNote } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
@@ -135,17 +136,23 @@ export default function InsightSessionPage() {
         </div>
       </div>
 
-      {/* Tasks worked on */}
+      {/* Task time breakdown — horizontal bars */}
       {tasks.length > 0 && (
         <div className="mb-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">Tasks</h2>
-          <div className="flex flex-col gap-2">
-            {tasks.map((task) => (
-              <div key={String(task._id)} className="bg-surface-container-low rounded-2xl px-5 py-3 flex items-center justify-between">
-                <p className="font-body text-sm text-on-surface">{task.name}</p>
-                <span className="font-display text-sm font-bold text-primary">{formatSeconds(task.timeSpent)}</span>
-              </div>
-            ))}
+          <div className="bg-surface-container-low rounded-2xl px-6 py-5">
+            <h2 className="font-display text-lg font-bold text-on-surface leading-none">
+              Time Breakdown
+            </h2>
+            <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">
+              How this session's time was spent
+            </p>
+            <HorizontalBars
+              entries={tasks
+                .filter(t => t.timeSpent > 0)
+                .sort((a, b) => b.timeSpent - a.timeSpent)
+                .map(t => ({ label: t.name, value: t.timeSpent }))}
+              emptyMessage="No task time recorded"
+            />
           </div>
         </div>
       )}

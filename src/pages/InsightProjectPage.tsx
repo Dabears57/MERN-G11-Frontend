@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { getFullProject } from '../api/queries.ts';
 import { createNote, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
+import DonutChart from '../components/DonutChart.tsx';
+import BarChart from '../components/BarChart.tsx';
 import type { FullProject, ApiNote } from '../types/index.ts';
 
 function formatSeconds(s: number): string {
@@ -80,7 +82,24 @@ export default function InsightProjectPage() {
 
   const { project, tasks, sessions } = data;
   const projectNotes = notesFor('project', project._id);
-  const completedSessions = sessions.filter((s) => !s.active);
+  const completedSessions = sessions.filter((s) => !s.active && s.totalTime > 0);
+
+  // Task donut slices
+  const taskSlices = tasks
+    .filter(t => t.totalTime > 0)
+    .map(t => ({ label: t.name, value: t.totalTime }));
+
+  // Session bar data (last 12 sessions)
+  const sessionBarData = completedSessions.slice(-12).map((s, i) => ({
+    label: `#${completedSessions.indexOf(s) + 1}`,
+    value: s.totalTime / 3600,
+    highlight: false,
+  }));
+
+  const avgSessionSecs =
+    completedSessions.length > 0
+      ? completedSessions.reduce((sum, s) => sum + s.totalTime, 0) / completedSessions.length
+      : 0;
 
   return (
     <div className="animate-fade-up">
@@ -112,11 +131,47 @@ export default function InsightProjectPage() {
           <p className="font-body text-xs text-on-surface/35 mt-0.5">completed</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Tasks</p>
-          <p className="font-display text-2xl font-bold text-on-surface">{tasks.length}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">total</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Avg Session</p>
+          <p className="font-display text-2xl font-bold text-on-surface">
+            {avgSessionSecs > 0 ? formatSeconds(avgSessionSecs) : '—'}
+          </p>
+          <p className="font-body text-xs text-on-surface/35 mt-0.5">per session</p>
         </div>
       </div>
+
+      {/* Charts section */}
+      {(taskSlices.length > 0 || completedSessions.length > 0) && (
+        <div className="grid grid-cols-[5fr_7fr] gap-6 mb-8">
+          {/* Task time donut */}
+          <div className="bg-surface-container-low rounded-2xl px-6 py-5">
+            <h2 className="font-display text-lg font-bold text-on-surface leading-none">Task Time</h2>
+            <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">Distribution by task</p>
+            <div className="flex justify-center">
+              <DonutChart
+                slices={taskSlices}
+                centerLabel={taskSlices.length > 0 ? formatSeconds(tasks.reduce((s, t) => s + t.totalTime, 0)) : undefined}
+                centerSub="tracked"
+                size={164}
+                thickness={22}
+                emptyMessage="No task time yet"
+              />
+            </div>
+          </div>
+
+          {/* Session duration bars */}
+          <div className="bg-surface-container-low rounded-2xl px-6 py-5">
+            <h2 className="font-display text-lg font-bold text-on-surface leading-none">Session Durations</h2>
+            <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">
+              Hours per session{completedSessions.length > 12 ? ' (last 12)' : ''}
+            </p>
+            <BarChart
+              data={sessionBarData}
+              height={120}
+              emptyMessage="No completed sessions"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Tasks breakdown */}
       {tasks.length > 0 && (
@@ -125,6 +180,8 @@ export default function InsightProjectPage() {
           <div className="flex flex-col gap-2">
             {tasks.map((task) => {
               const taskNotes = notesFor('task', task._id);
+              const maxTaskTime = Math.max(...tasks.map(t => t.totalTime), 1);
+              const barPct = (task.totalTime / maxTaskTime) * 100;
               return (
                 <div key={task._id} className="bg-surface-container-low rounded-2xl px-5 py-4">
                   <div className="flex items-center justify-between mb-1">
@@ -133,6 +190,14 @@ export default function InsightProjectPage() {
                   </div>
                   {task.description && (
                     <p className="font-body text-xs text-on-surface/50 leading-relaxed mb-2">{task.description}</p>
+                  )}
+                  {task.totalTime > 0 && (
+                    <div className="h-1 bg-surface-container-highest rounded-full overflow-hidden mt-2 mb-1">
+                      <div
+                        className="h-full rounded-full bg-primary/40 animate-grow-x"
+                        style={{ width: `${barPct}%`, animationDelay: '0.2s' }}
+                      />
+                    </div>
                   )}
                   {taskNotes.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-surface-container-highest flex flex-col gap-1.5">
@@ -160,21 +225,6 @@ export default function InsightProjectPage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Session history */}
-      {completedSessions.length > 0 && (
-        <div className="mb-8">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-4">Sessions</h2>
-          <div className="flex flex-col gap-2">
-            {completedSessions.map((session, idx) => (
-              <div key={session._id} className="bg-surface-container-low rounded-2xl px-5 py-3 flex items-center justify-between">
-                <p className="font-body text-sm text-on-surface/70">Session #{idx + 1}</p>
-                <span className="font-display text-sm font-bold text-on-surface">{formatSeconds(session.totalTime)}</span>
-              </div>
-            ))}
           </div>
         </div>
       )}
