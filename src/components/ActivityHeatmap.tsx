@@ -50,9 +50,9 @@ export default function ActivityHeatmap({ cells }: ActivityHeatmapProps) {
           ))}
         </div>
 
-        {/* Rows = weeks (oldest → newest top → bottom), Columns = days */}
+        {/* Rows = weeks (newest → oldest top → bottom), Columns = days */}
         <div className="flex flex-col gap-2">
-          {grid.map((week, wi) => (
+          {grid.slice().reverse().map((week, wi) => (
             <div key={wi} className="grid grid-cols-7 gap-2">
               {week.map((intensity, di) => (
                 <div
