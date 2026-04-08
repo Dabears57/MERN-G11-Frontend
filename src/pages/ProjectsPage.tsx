@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import ProjectCard from '../components/ProjectCard.tsx';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import { createProject, fetchProjects, deleteProject } from '../api/projects.ts';
+import { deleteTask } from '../api/tasks.ts';
+import { deleteNote } from '../api/notes.ts';
+import { getFullProject } from '../api/queries.ts';
 import type { ApiProject } from '../types/index.ts';
 
 export default function ProjectsPage() {
@@ -14,6 +18,8 @@ export default function ProjectsPage() {
   const [description, setDescription] = useState('');
   const [saving,      setSaving]      = useState(false);
   const [saveError,   setSaveError]   = useState('');
+  const [pendingDeleteId,    setPendingDeleteId]    = useState<string | null>(null);
+  const [isDeleting,         setIsDeleting]         = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,9 +45,23 @@ export default function ProjectsPage() {
     load();
   }
 
-  async function handleDelete(id: string) {
-    await deleteProject(id);
-    setProjects((prev) => prev.filter((p) => p._id !== id));
+  function handleDelete(id: string) {
+    setPendingDeleteId(id);
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId) return;
+    setIsDeleting(true);
+    // Cascade: delete all notes and tasks for the project before deleting it
+    const full = await getFullProject(pendingDeleteId);
+    if (full.data) {
+      await Promise.all(full.data.notes.map((n) => deleteNote(n._id)));
+      await Promise.all(full.data.tasks.map((t) => deleteTask(t._id)));
+    }
+    await deleteProject(pendingDeleteId);
+    setProjects((prev) => prev.filter((p) => p._id !== pendingDeleteId));
+    setIsDeleting(false);
+    setPendingDeleteId(null);
   }
 
   function handleClose() {
@@ -118,6 +138,17 @@ export default function ProjectsPage() {
           ))}
         </div>
       )}
+
+      {/* Delete confirmation modal */}
+      <ConfirmDeleteModal
+        isOpen={!!pendingDeleteId}
+        title="Delete Project"
+        message="This will permanently delete the project along with all its tasks and notes. This action cannot be undone."
+        confirmLabel="Delete Project"
+        isDeleting={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
 
       {/* New project modal */}
       {showModal && (

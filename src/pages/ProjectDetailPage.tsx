@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import { getFullProject } from '../api/queries.ts';
 import { createTask, deleteTask } from '../api/tasks.ts';
 import { createNote, deleteNote } from '../api/notes.ts';
@@ -22,6 +23,9 @@ export default function ProjectDetailPage() {
   const [data,         setData]         = useState<FullProject | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState('');
+
+  // delete confirmations
+  const [pendingDelete, setPendingDelete] = useState<{ type: 'task' | 'note'; id: string } | null>(null);
 
   // task modal
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -58,9 +62,8 @@ export default function ProjectDetailPage() {
     load();
   }
 
-  async function handleDeleteTask(taskId: string) {
-    await deleteTask(taskId);
-    setData((prev) => prev ? { ...prev, tasks: prev.tasks.filter((t) => t._id !== taskId) } : prev);
+  function handleDeleteTask(taskId: string) {
+    setPendingDelete({ type: 'task', id: taskId });
   }
 
   async function handleAddProjectNote(e: React.FormEvent) {
@@ -82,9 +85,20 @@ export default function ProjectDetailPage() {
     return true;
   }
 
-  async function handleDeleteNote(noteId: string) {
-    await deleteNote(noteId);
-    setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== noteId) } : prev);
+  function handleDeleteNote(noteId: string) {
+    setPendingDelete({ type: 'note', id: noteId });
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete) return;
+    if (pendingDelete.type === 'task') {
+      await deleteTask(pendingDelete.id);
+      setData((prev) => prev ? { ...prev, tasks: prev.tasks.filter((t) => t._id !== pendingDelete.id) } : prev);
+    } else {
+      await deleteNote(pendingDelete.id);
+      setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== pendingDelete.id) } : prev);
+    }
+    setPendingDelete(null);
   }
 
   function notesFor(type: ApiNote['parentType'], targetId: string): ApiNote[] {
@@ -254,6 +268,20 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      <ConfirmDeleteModal
+        isOpen={!!pendingDelete}
+        title={pendingDelete?.type === 'task' ? 'Delete Task' : 'Delete Note'}
+        message={
+          pendingDelete?.type === 'task'
+            ? 'This will permanently delete the task and all its notes. This action cannot be undone.'
+            : 'This will permanently delete this note. This action cannot be undone.'
+        }
+        confirmLabel="Delete"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {/* Add Task Modal */}
       {showTaskModal && (

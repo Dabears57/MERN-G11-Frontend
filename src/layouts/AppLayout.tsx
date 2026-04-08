@@ -1,14 +1,14 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar.tsx';
 import SessionFloatingWidget from '../components/SessionFloatingWidget.tsx';
-import { useActiveSession } from '../hooks/useActiveSession.ts';
+import { ActiveSessionProvider, useActiveSessionContext } from '../contexts/ActiveSessionContext.tsx';
 
 const SIDEBAR_WIDTH = 228;
 const CONTENT_PADDING = 40; // px-10
 
-export default function AppLayout() {
+function AppLayoutInner() {
   const location = useLocation();
-  const { info } = useActiveSession();
+  const { info } = useActiveSessionContext();
 
   // Widget is only shown on pages other than sessions (sessions manages its own session UI)
   const showWidget = location.pathname !== '/sessions' && info.status !== 'no active session';
@@ -28,5 +28,13 @@ export default function AppLayout() {
 
       {showWidget && <SessionFloatingWidget info={info} />}
     </div>
+  );
+}
+
+export default function AppLayout() {
+  return (
+    <ActiveSessionProvider>
+      <AppLayoutInner />
+    </ActiveSessionProvider>
   );
 }

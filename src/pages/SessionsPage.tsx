@@ -3,8 +3,10 @@ import { useLocation } from 'react-router-dom';
 import StatCard from '../components/StatCard.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
 import Button from '../components/Button.tsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import { useTimer } from '../hooks/useTimer.ts';
 import { saveSessionMeta, clearSessionMeta, formatElapsed } from '../hooks/useActiveSession.ts';
+import { useActiveSessionContext } from '../contexts/ActiveSessionContext.tsx';
 import { listSessions } from '../api/queries.ts';
 import { fetchProjects } from '../api/projects.ts';
 import { fetchTasksForProject, createTask } from '../api/tasks.ts';
@@ -32,6 +34,7 @@ function formatSeconds(s: number): string {
 type SessionMode = 'list' | 'focus';
 
 export default function SessionsPage() {
+  const { refresh: refreshActiveSession } = useActiveSessionContext();
   const { elapsed, isRunning, formattedTime, start, pause, reset, syncElapsed } = useTimer();
   const location = useLocation();
   const autoStartProjectId = (location.state as { projectId?: string } | null)?.projectId ?? null;
@@ -74,6 +77,13 @@ export default function SessionsPage() {
   const [taskNoteFormOpen,  setTaskNoteFormOpen]  = useState(false);
   const [taskNoteContent,   setTaskNoteContent]   = useState('');
   const [taskNoteSaving,    setTaskNoteSaving]    = useState(false);
+
+  // ── delete confirmations ─────────────────────────────────────────────────
+  const [pendingNoteDelete, setPendingNoteDelete] = useState<
+    | { type: 'session'; noteId: string }
+    | { type: 'task'; noteId: string; taskId: string }
+    | null
+  >(null);
 
   // ── summary ───────────────────────────────────────────────────────────────
   const [showSummary,    setShowSummary]    = useState(false);
@@ -229,6 +239,7 @@ export default function SessionsPage() {
     setTaskNoteFormOpen(false);
     setTaskNoteContent('');
     clearSessionMeta();
+    refreshActiveSession();
     loadSessions();
   }
 
@@ -320,9 +331,8 @@ export default function SessionsPage() {
     setNoteSaving(false);
   }
 
-  async function handleDeleteNote(noteId: string) {
-    await deleteNote(noteId);
-    setSessionNotes((prev) => prev.filter((n) => n._id !== noteId));
+  function handleDeleteNote(noteId: string) {
+    setPendingNoteDelete({ type: 'session', noteId });
   }
 
   // ── task notes (focus mode) ───────────────────────────────────────────────
@@ -359,9 +369,21 @@ export default function SessionsPage() {
     setTaskNoteSaving(false);
   }
 
-  async function handleDeleteTaskNote(noteId: string, taskId: string) {
-    await deleteNote(noteId);
-    setTaskNotes((prev) => ({ ...prev, [taskId]: (prev[taskId] ?? []).filter((n) => n._id !== noteId) }));
+  function handleDeleteTaskNote(noteId: string, taskId: string) {
+    setPendingNoteDelete({ type: 'task', noteId, taskId });
+  }
+
+  async function handleConfirmNoteDelete() {
+    if (!pendingNoteDelete) return;
+    if (pendingNoteDelete.type === 'session') {
+      await deleteNote(pendingNoteDelete.noteId);
+      setSessionNotes((prev) => prev.filter((n) => n._id !== pendingNoteDelete.noteId));
+    } else {
+      const { noteId, taskId } = pendingNoteDelete;
+      await deleteNote(noteId);
+      setTaskNotes((prev) => ({ ...prev, [taskId]: (prev[taskId] ?? []).filter((n) => n._id !== noteId) }));
+    }
+    setPendingNoteDelete(null);
   }
 
   // ── misc ──────────────────────────────────────────────────────────────────
@@ -964,6 +986,14 @@ export default function SessionsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!pendingNoteDelete}
+        title="Delete Note"
+        message="This will permanently delete this note. This action cannot be undone."
+        onConfirm={handleConfirmNoteDelete}
+        onCancel={() => setPendingNoteDelete(null)}
+      />
     </>
   );
 }

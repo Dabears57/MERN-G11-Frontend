@@ -80,7 +80,7 @@ export default function DashboardPage() {
             ) : recentSessions.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {recentSessions.map((session, i) => (
-                  <SessionLogItem key={session._id} session={session} index={i} />
+                  <SessionLogItem key={session._id} session={session} index={i} linkable from="/dashboard" />
                 ))}
               </div>
             ) : (

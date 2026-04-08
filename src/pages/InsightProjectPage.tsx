@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getFullProject } from '../api/queries.ts';
 import { createNote, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import DonutChart from '../components/DonutChart.tsx';
 import BarChart from '../components/BarChart.tsx';
 import type { FullProject, ApiNote } from '../types/index.ts';
@@ -25,6 +26,7 @@ export default function InsightProjectPage() {
   const [noteContent, setNoteContent] = useState('');
   const [noteTarget,  setNoteTarget]  = useState<{ type: ApiNote['parentType']; id: string } | null>(null);
   const [noteSaving,  setNoteSaving]  = useState(false);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -48,9 +50,15 @@ export default function InsightProjectPage() {
     load();
   }
 
-  async function handleDeleteNote(noteId: string) {
-    await deleteNote(noteId);
-    setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== noteId) } : prev);
+  function handleDeleteNote(noteId: string) {
+    setPendingDeleteNoteId(noteId);
+  }
+
+  async function handleConfirmDeleteNote() {
+    if (!pendingDeleteNoteId) return;
+    await deleteNote(pendingDeleteNoteId);
+    setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== pendingDeleteNoteId) } : prev);
+    setPendingDeleteNoteId(null);
   }
 
   function notesFor(type: ApiNote['parentType'], targetId: string): ApiNote[] {
@@ -260,6 +268,14 @@ export default function InsightProjectPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!pendingDeleteNoteId}
+        title="Delete Note"
+        message="This will permanently delete this note. This action cannot be undone."
+        onConfirm={handleConfirmDeleteNote}
+        onCancel={() => setPendingDeleteNoteId(null)}
+      />
     </div>
   );
 }

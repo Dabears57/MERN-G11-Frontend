@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from 'react-router-dom';
 import { getFullSession } from '../api/queries.ts';
 import { createNote, fetchNotesFor, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import HorizontalBars from '../components/HorizontalBars.tsx';
 import type { FullSession, ApiNote } from '../types/index.ts';
 
@@ -27,6 +28,7 @@ export default function InsightSessionPage() {
   const [noteContent,  setNoteContent]  = useState('');
   const [noteSaving,   setNoteSaving]   = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -63,9 +65,15 @@ export default function InsightSessionPage() {
     setNoteSaving(false);
   }
 
-  async function handleDeleteNote(noteId: string) {
-    await deleteNote(noteId);
-    setNotes((prev) => prev.filter((n) => n._id !== noteId));
+  function handleDeleteNote(noteId: string) {
+    setPendingDeleteNoteId(noteId);
+  }
+
+  async function handleConfirmDeleteNote() {
+    if (!pendingDeleteNoteId) return;
+    await deleteNote(pendingDeleteNoteId);
+    setNotes((prev) => prev.filter((n) => n._id !== pendingDeleteNoteId));
+    setPendingDeleteNoteId(null);
   }
 
   if (loading) {
@@ -92,6 +100,17 @@ export default function InsightSessionPage() {
   }
 
   const { session, project, tasks } = data;
+
+  if (!project) {
+    return (
+      <div className="animate-fade-up">
+        <Link to={backTo} className="font-body text-sm text-on-surface/50 hover:text-primary mb-4 inline-block">
+          ← Back to {backLabel}
+        </Link>
+        <p className="font-body text-on-surface/50">The project for this session no longer exists.</p>
+      </div>
+    );
+  }
 
   const startDate = session.createdAt
     ? new Date(session.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -217,6 +236,14 @@ export default function InsightSessionPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!pendingDeleteNoteId}
+        title="Delete Note"
+        message="This will permanently delete this note. This action cannot be undone."
+        onConfirm={handleConfirmDeleteNote}
+        onCancel={() => setPendingDeleteNoteId(null)}
+      />
     </div>
   );
 }
