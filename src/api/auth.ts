@@ -7,18 +7,17 @@ export async function loginUser(
   try {
     const response = await fetch(buildPath('api/users/login'), {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.toLowerCase(), password }),
       headers: { 'Content-Type': 'application/json' },
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      const errorCode = data.error ?? data.message ?? 'Login failed';
-      return {
-        error: errorCode,
-        emailNotVerified: data.error === 'EMAIL_NOT_VERIFIED',
-      };
+      if (data.error === 'EMAIL_NOT_VERIFIED') {
+        return { emailNotVerified: true };
+      }
+      return { error: 'Invalid email or password.' };
     }
 
     return { token: data.data?.token };
@@ -35,7 +34,7 @@ export async function createUser(
   try {
     const response = await fetch(buildPath('api/users/create'), {
       method: 'POST',
-      body: JSON.stringify({ email, password, firstName }),
+      body: JSON.stringify({ email: email.toLowerCase(), password, firstName }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -77,7 +76,7 @@ export async function resendVerification(
   try {
     const response = await fetch(buildPath('api/users/verify/regen'), {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: email.toLowerCase() }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -99,7 +98,7 @@ export async function requestPasswordReset(
   try {
     const response = await fetch(buildPath('api/users/password/reset/request'), {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: email.toLowerCase() }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -124,7 +123,7 @@ export async function resetPassword(
   try {
     const response = await fetch(buildPath('api/users/password/reset'), {
       method: 'POST',
-      body: JSON.stringify({ email, token, newPassword }),
+      body: JSON.stringify({ email: email.toLowerCase(), token, newPassword }),
       headers: { 'Content-Type': 'application/json' },
     });
 
