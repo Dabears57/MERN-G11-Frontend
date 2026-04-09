@@ -54,7 +54,7 @@ export default function InsightsPage() {
   const insightStats = [
     {
       label: 'Total Hours',
-      value: totalHours > 0 ? totalHours.toFixed(1) : '0',
+      value: totalHours > 0 ? totalHours.toFixed(2) : '0',
       subtitle: 'hrs',
       variant: 'primary' as const,
     },
@@ -198,7 +198,7 @@ export default function InsightsPage() {
                     totalProjectTime > 0
                       ? (project.totalTime / totalProjectTime) * 100
                       : 0;
-                  const hrs = (project.totalTime / 3600).toFixed(1);
+                  const hrs = (project.totalTime / 3600).toFixed(2);
                   return (
                     <div key={project._id}>
                       <div className="flex items-center justify-between mb-1.5">
@@ -246,7 +246,7 @@ export default function InsightsPage() {
               <div className="flex flex-col gap-4">
                 {sortedTasks.slice(0, 5).map((task, i) => {
                   const pct = totalTaskTime > 0 ? (task.totalTime / totalTaskTime) * 100 : 0;
-                  const hrs = (task.totalTime / 3600).toFixed(1);
+                  const hrs = (task.totalTime / 3600).toFixed(2);
                   const projectColor = projectColorMap.get(task.projectName) ?? '#004d44';
                   return (
                     <div key={task._id}>

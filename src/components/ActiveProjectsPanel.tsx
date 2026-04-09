@@ -11,7 +11,7 @@ interface ActiveProjectsPanelProps {
 
 function formatHours(secs: number): string {
   const h = secs / 3600;
-  return h < 0.1 ? '0h' : `${h.toFixed(1)}h`;
+  return h < 0.1 ? '0h' : `${h.toFixed(2)}h`;
 }
 
 export default function ActiveProjectsPanel({ projects, loading }: ActiveProjectsPanelProps) {

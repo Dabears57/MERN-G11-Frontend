@@ -60,7 +60,7 @@ export default function BarChart({
                     className="font-display font-bold text-on-surface/35"
                     style={{ fontSize: 8 }}
                   >
-                    {d.value.toFixed(1)}
+                    {d.value.toFixed(2)}
                   </span>
                 )}
                 <div

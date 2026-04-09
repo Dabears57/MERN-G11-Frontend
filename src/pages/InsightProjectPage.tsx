@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getFullProject } from '../api/queries.ts';
-import { createNote, deleteNote } from '../api/notes.ts';
+import { createNote, updateNote, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import DonutChart from '../components/DonutChart.tsx';
@@ -59,6 +59,16 @@ export default function InsightProjectPage() {
     await deleteNote(pendingDeleteNoteId);
     setData((prev) => prev ? { ...prev, notes: prev.notes.filter((n) => n._id !== pendingDeleteNoteId) } : prev);
     setPendingDeleteNoteId(null);
+  }
+
+  async function handleEditNote(noteId: string, content: string) {
+    const { error } = await updateNote(noteId, content);
+    if (!error) {
+      setData((prev) => prev
+        ? { ...prev, notes: prev.notes.map((n) => n._id === noteId ? { ...n, content } : n) }
+        : prev
+      );
+    }
   }
 
   function notesFor(type: ApiNote['parentType'], targetId: string): ApiNote[] {
@@ -211,7 +221,7 @@ export default function InsightProjectPage() {
                     <div className="mt-3 pt-3 border-t border-surface-container-highest flex flex-col gap-1.5">
                       <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-on-surface/30 mb-1">Notes</p>
                       {taskNotes.map((note) => (
-                        <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} compact />
+                        <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} onEdit={handleEditNote} compact />
                       ))}
                     </div>
                   )}
@@ -262,8 +272,8 @@ export default function InsightProjectPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {projectNotes.map((note) => (
-              <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} />
+            {[...projectNotes].reverse().map((note) => (
+              <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} onEdit={handleEditNote} />
             ))}
           </div>
         )}
@@ -316,13 +326,64 @@ function NoteForm({ value, saving, onChange, onSubmit, onCancel }: NoteFormProps
 interface NoteItemProps {
   note: ApiNote;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => Promise<void>;
   compact?: boolean;
 }
 
-function NoteItem({ note, onDelete, compact }: NoteItemProps) {
+function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState('');
+  const [saving,  setSaving]  = useState(false);
+
   const date = new Date(note.createdAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
+
+  function handleStartEdit() {
+    setDraft(note.content);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    if (!draft.trim()) return;
+    setSaving(true);
+    await onEdit(note._id, draft.trim());
+    setSaving(false);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex flex-col gap-2`}>
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={compact ? 2 : 3}
+          className="bg-white rounded-lg px-3 py-2 font-body text-sm text-on-surface
+            outline-none ring-2 ring-transparent focus:ring-primary/30
+            transition-all duration-200 resize-none w-full"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={!draft.trim() || saving}
+            className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+              bg-primary text-white hover:bg-primary-container transition-all
+              disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex items-start justify-between gap-3`}>
@@ -332,16 +393,27 @@ function NoteItem({ note, onDelete, compact }: NoteItemProps) {
         </p>
         <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
       </div>
-      <button
-        onClick={() => onDelete(note._id)}
-        className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest mt-0.5"
-        aria-label="Delete note"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-          <path d="M9 6V4h6v2" />
-        </svg>
-      </button>
+      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+        <button
+          onClick={handleStartEdit}
+          className="text-on-surface/25 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          aria-label="Edit note"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+        <button
+          onClick={() => onDelete(note._id)}
+          className="text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          aria-label="Delete note"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

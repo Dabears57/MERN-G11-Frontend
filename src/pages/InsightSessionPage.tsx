@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { getFullSession } from '../api/queries.ts';
-import { createNote, fetchNotesFor, deleteNote } from '../api/notes.ts';
+import { createNote, fetchNotesFor, updateNote, deleteNote } from '../api/notes.ts';
 import Button from '../components/Button.tsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import HorizontalBars from '../components/HorizontalBars.tsx';
@@ -29,6 +29,9 @@ export default function InsightSessionPage() {
   const [noteSaving,   setNoteSaving]   = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const [editingNoteId,       setEditingNoteId]       = useState<string | null>(null);
+  const [editingContent,      setEditingContent]      = useState('');
+  const [editSaving,          setEditSaving]          = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -74,6 +77,18 @@ export default function InsightSessionPage() {
     await deleteNote(pendingDeleteNoteId);
     setNotes((prev) => prev.filter((n) => n._id !== pendingDeleteNoteId));
     setPendingDeleteNoteId(null);
+  }
+
+  async function handleSaveNoteEdit() {
+    if (!editingNoteId || !editingContent.trim()) return;
+    setEditSaving(true);
+    const { error } = await updateNote(editingNoteId, editingContent.trim());
+    if (!error) {
+      setNotes((prev) => prev.map((n) => n._id === editingNoteId ? { ...n, content: editingContent.trim() } : n));
+      setEditingNoteId(null);
+      setEditingContent('');
+    }
+    setEditSaving(false);
   }
 
   if (loading) {
@@ -212,24 +227,60 @@ export default function InsightSessionPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {notes.map((note) => {
+            {[...notes].reverse().map((note) => {
               const date = new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              const isEditing = editingNoteId === note._id;
               return (
-                <div key={note._id} className="bg-surface-container-low rounded-2xl px-5 py-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{note.content}</p>
-                    <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteNote(note._id)}
-                    className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container mt-0.5"
-                    aria-label="Delete note"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-                      <path d="M9 6V4h6v2" />
-                    </svg>
-                  </button>
+                <div key={note._id} className="bg-surface-container-low rounded-2xl px-5 py-4">
+                  {isEditing ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        autoFocus
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        rows={3}
+                        className="bg-white rounded-xl px-4 py-3 font-body text-sm text-on-surface
+                          outline-none ring-2 ring-transparent focus:ring-primary/30
+                          transition-all duration-200 resize-none w-full"
+                      />
+                      <div className="flex gap-2">
+                        <Button type="button" size="sm" onClick={handleSaveNoteEdit} disabled={!editingContent.trim() || editSaving}>
+                          {editSaving ? 'Saving…' : 'Save'}
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => { setEditingNoteId(null); setEditingContent(''); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                        <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <button
+                          onClick={() => { setEditingNoteId(note._id); setEditingContent(note.content); }}
+                          className="text-on-surface/25 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container"
+                          aria-label="Edit note"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(note._id)}
+                          className="text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container"
+                          aria-label="Delete note"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+                            <path d="M9 6V4h6v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

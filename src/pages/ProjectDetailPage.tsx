@@ -3,9 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
+import { updateProject } from '../api/projects.ts';
 import { getFullProject } from '../api/queries.ts';
-import { createTask, deleteTask } from '../api/tasks.ts';
-import { createNote, deleteNote } from '../api/notes.ts';
+import { createTask, updateTask, deleteTask } from '../api/tasks.ts';
+import { createNote, updateNote, deleteNote } from '../api/notes.ts';
 import { formatDuration } from '../data/mock.ts';
 import type { ApiTask, ApiNote, FullProject } from '../types/index.ts';
 
@@ -23,6 +24,12 @@ export default function ProjectDetailPage() {
   const [data,         setData]         = useState<FullProject | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState('');
+
+  // edit project
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [editTitle,       setEditTitle]       = useState('');
+  const [editDesc,        setEditDesc]        = useState('');
+  const [editSaving,      setEditSaving]      = useState(false);
 
   // delete confirmations
   const [pendingDelete, setPendingDelete] = useState<{ type: 'task' | 'note'; id: string } | null>(null);
@@ -62,6 +69,16 @@ export default function ProjectDetailPage() {
     load();
   }
 
+  async function handleEditTask(taskId: string, name: string, description: string) {
+    const { error } = await updateTask(taskId, { name, description });
+    if (!error) {
+      setData((prev) => prev
+        ? { ...prev, tasks: prev.tasks.map((t) => t._id === taskId ? { ...t, name, description } : t) }
+        : prev
+      );
+    }
+  }
+
   function handleDeleteTask(taskId: string) {
     setPendingDelete({ type: 'task', id: taskId });
   }
@@ -87,6 +104,36 @@ export default function ProjectDetailPage() {
 
   function handleDeleteNote(noteId: string) {
     setPendingDelete({ type: 'note', id: noteId });
+  }
+
+  function openEditProject() {
+    setEditTitle(data!.project.title);
+    setEditDesc(data!.project.description ?? '');
+    setShowEditProject(true);
+  }
+
+  async function handleEditProjectSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTitle.trim() || !id) return;
+    setEditSaving(true);
+    const { error } = await updateProject(id, { title: editTitle.trim(), description: editDesc.trim() });
+    setEditSaving(false);
+    if (error) return;
+    setData((prev) => prev
+      ? { ...prev, project: { ...prev.project, title: editTitle.trim(), description: editDesc.trim() } }
+      : prev
+    );
+    setShowEditProject(false);
+  }
+
+  async function handleEditNote(noteId: string, content: string) {
+    const { error } = await updateNote(noteId, content);
+    if (!error) {
+      setData((prev) => prev
+        ? { ...prev, notes: prev.notes.map((n) => n._id === noteId ? { ...n, content } : n) }
+        : prev
+      );
+    }
   }
 
   async function handleConfirmDelete() {
@@ -147,7 +194,18 @@ export default function ProjectDetailPage() {
       {/* Title + Start Session */}
       <div className="flex items-start justify-between gap-4 mb-7">
         <div className="min-w-0">
-          <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight break-words">{project.title}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight break-words">{project.title}</h1>
+            <button
+              onClick={openEditProject}
+              className="shrink-0 text-on-surface/30 hover:text-primary transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-surface-container mt-1"
+              aria-label="Edit project"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+          </div>
           {project.description && (
             <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">{project.description}</p>
           )}
@@ -215,8 +273,10 @@ export default function ProjectDetailPage() {
                 task={task}
                 notes={taskNotes}
                 onDelete={handleDeleteTask}
+                onEdit={handleEditTask}
                 onSubmitNote={handleAddTaskNote}
                 onDeleteNote={handleDeleteNote}
+                onEditNote={handleEditNote}
               />
             );
           })}
@@ -262,8 +322,8 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {projectNotes.map((note) => (
-              <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} />
+            {[...projectNotes].reverse().map((note) => (
+              <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} onEdit={handleEditNote} />
             ))}
           </div>
         )}
@@ -282,6 +342,51 @@ export default function ProjectDetailPage() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
+
+      {/* Edit Project Modal */}
+      {showEditProject && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-project-title"
+        >
+          <div className="absolute inset-0 bg-on-surface/30 backdrop-blur-sm" onClick={() => setShowEditProject(false)} />
+          <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-md
+            shadow-[0_24px_60px_rgba(26,28,28,0.14)] animate-scale-in">
+            <h2 id="edit-project-title" className="font-display text-xl font-bold text-on-surface mb-5">Edit Project</h2>
+            <form onSubmit={handleEditProjectSubmit} className="flex flex-col gap-4">
+              <Input
+                label="Title"
+                placeholder="Project title"
+                value={editTitle}
+                onChange={setEditTitle}
+                autoFocus
+              />
+              <div className="flex flex-col gap-1.5">
+                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/50">
+                  Description
+                </label>
+                <textarea
+                  placeholder="What is this project about?"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  rows={3}
+                  className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
+                    outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
+                    transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+                />
+              </div>
+              <div className="flex items-center gap-2.5 pt-1">
+                <Button type="submit" disabled={!editTitle.trim() || editSaving}>
+                  {editSaving ? 'Saving…' : 'Save Changes'}
+                </Button>
+                <Button variant="ghost" type="button" onClick={() => setShowEditProject(false)}>Cancel</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Task Modal */}
       {showTaskModal && (
@@ -337,15 +442,35 @@ interface TaskItemProps {
   task: ApiTask;
   notes: ApiNote[];
   onDelete: (id: string) => void;
+  onEdit: (id: string, name: string, description: string) => Promise<void>;
   onSubmitNote: (taskId: string, content: string) => Promise<boolean>;
   onDeleteNote: (id: string) => void;
+  onEditNote: (id: string, content: string) => Promise<void>;
 }
 
-function TaskItem({ task, notes, onDelete, onSubmitNote, onDeleteNote }: TaskItemProps) {
-  const [expanded,     setExpanded]     = useState(false);
+function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, onEditNote }: TaskItemProps) {
+  const [expanded,    setExpanded]    = useState(false);
+  const [editing,     setEditing]     = useState(false);
+  const [editName,    setEditName]    = useState('');
+  const [editDesc,    setEditDesc]    = useState('');
+  const [editSaving,  setEditSaving]  = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteContent,  setNoteContent]  = useState('');
   const [noteSaving,   setNoteSaving]   = useState(false);
+
+  function handleStartEdit() {
+    setEditName(task.name);
+    setEditDesc(task.description ?? '');
+    setEditing(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!editName.trim()) return;
+    setEditSaving(true);
+    await onEdit(task._id, editName.trim(), editDesc.trim());
+    setEditSaving(false);
+    setEditing(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -362,34 +487,80 @@ function TaskItem({ task, notes, onDelete, onSubmitNote, onDeleteNote }: TaskIte
   return (
     <div className="bg-surface-container-low rounded-2xl">
       <div className="px-5 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-4 h-4 rounded shrink-0 bg-surface-container-highest" />
-            <div className="min-w-0">
-              <h3 className="font-body text-sm font-semibold text-on-surface truncate">{task.name}</h3>
-              {task.description && (
-                <p className="font-body text-xs text-on-surface/50 mt-0.5 leading-relaxed">{task.description}</p>
-              )}
+        {editing ? (
+          <div className="flex flex-col gap-2.5">
+            <input
+              autoFocus
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Task name"
+              className="bg-white rounded-xl px-4 py-2.5 font-body text-sm font-semibold text-on-surface
+                outline-none ring-2 ring-transparent focus:ring-primary/30
+                transition-all duration-200 placeholder:text-on-surface/30 w-full"
+            />
+            <input
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              placeholder="Description (optional)"
+              className="bg-surface-container rounded-xl px-4 py-2.5 font-body text-xs text-on-surface
+                outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
+                transition-all duration-200 placeholder:text-on-surface/30 w-full"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editName.trim() || editSaving}
+                className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                  bg-primary text-white hover:bg-primary-container transition-all
+                  disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {editSaving ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="font-body text-xs text-on-surface/35">
-              {formatDuration(task.totalTime)}
-            </span>
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
-            >
-              {notes.length > 0 ? `${notes.length} note${notes.length !== 1 ? 's' : ''}` : 'Notes'}
-            </button>
-            <button
-              onClick={() => onDelete(task._id)}
-              className="font-body text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
-            >
-              Delete
-            </button>
+        ) : (
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-4 h-4 rounded shrink-0 bg-surface-container-highest" />
+              <div className="min-w-0">
+                <h3 className="font-body text-sm font-semibold text-on-surface truncate">{task.name}</h3>
+                {task.description && (
+                  <p className="font-body text-xs text-on-surface/50 mt-0.5 leading-relaxed">{task.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="font-body text-xs text-on-surface/35">
+                {formatDuration(task.totalTime)}
+              </span>
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+              >
+                Notes
+              </button>
+              <button
+                onClick={handleStartEdit}
+                className="font-body text-xs text-on-surface/40 hover:text-primary transition-colors cursor-pointer"
+                aria-label="Edit task"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(task._id)}
+                className="font-body text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {expanded && (
@@ -443,8 +614,8 @@ function TaskItem({ task, notes, onDelete, onSubmitNote, onDeleteNote }: TaskIte
             <p className="font-body text-xs text-on-surface/30">No notes for this task.</p>
           ) : (
             <div className="flex flex-col gap-2">
-              {notes.map((note) => (
-                <NoteItem key={note._id} note={note} onDelete={onDeleteNote} compact />
+              {[...notes].reverse().map((note) => (
+                <NoteItem key={note._id} note={note} onDelete={onDeleteNote} onEdit={onEditNote} compact />
               ))}
             </div>
           )}
@@ -457,13 +628,64 @@ function TaskItem({ task, notes, onDelete, onSubmitNote, onDeleteNote }: TaskIte
 interface NoteItemProps {
   note: ApiNote;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => Promise<void>;
   compact?: boolean;
 }
 
-function NoteItem({ note, onDelete, compact }: NoteItemProps) {
+function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState('');
+  const [saving,  setSaving]  = useState(false);
+
   const date = new Date(note.createdAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
+
+  function handleStartEdit() {
+    setDraft(note.content);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    if (!draft.trim()) return;
+    setSaving(true);
+    await onEdit(note._id, draft.trim());
+    setSaving(false);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex flex-col gap-2`}>
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={compact ? 2 : 3}
+          className="bg-white rounded-lg px-3 py-2 font-body text-sm text-on-surface
+            outline-none ring-2 ring-transparent focus:ring-primary/30
+            transition-all duration-200 resize-none w-full"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={!draft.trim() || saving}
+            className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+              bg-primary text-white hover:bg-primary-container transition-all
+              disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex items-start justify-between gap-3`}>
@@ -473,16 +695,27 @@ function NoteItem({ note, onDelete, compact }: NoteItemProps) {
         </p>
         <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
       </div>
-      <button
-        onClick={() => onDelete(note._id)}
-        className="shrink-0 text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest mt-0.5"
-        aria-label="Delete note"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-          <path d="M9 6V4h6v2" />
-        </svg>
-      </button>
+      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+        <button
+          onClick={handleStartEdit}
+          className="text-on-surface/25 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          aria-label="Edit note"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+        <button
+          onClick={() => onDelete(note._id)}
+          className="text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          aria-label="Delete note"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

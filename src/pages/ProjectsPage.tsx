@@ -4,9 +4,6 @@ import Button from '../components/Button.tsx';
 import Input from '../components/Input.tsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.tsx';
 import { createProject, fetchProjects, deleteProject } from '../api/projects.ts';
-import { deleteTask } from '../api/tasks.ts';
-import { deleteNote } from '../api/notes.ts';
-import { getFullProject } from '../api/queries.ts';
 import type { ApiProject } from '../types/index.ts';
 
 export default function ProjectsPage() {
@@ -52,12 +49,6 @@ export default function ProjectsPage() {
   async function handleConfirmDelete() {
     if (!pendingDeleteId) return;
     setIsDeleting(true);
-    // Cascade: delete all notes and tasks for the project before deleting it
-    const full = await getFullProject(pendingDeleteId);
-    if (full.data) {
-      await Promise.all(full.data.notes.map((n) => deleteNote(n._id)));
-      await Promise.all(full.data.tasks.map((t) => deleteTask(t._id)));
-    }
     await deleteProject(pendingDeleteId);
     setProjects((prev) => prev.filter((p) => p._id !== pendingDeleteId));
     setIsDeleting(false);

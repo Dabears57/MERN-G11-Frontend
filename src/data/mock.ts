@@ -73,7 +73,7 @@ export function computeStats(sessions: SessionMetadata[], projectCount: number):
     },
     {
       label: 'Monthly Duration',
-      value: monthlyHours > 0 ? monthlyHours.toFixed(1) : '0',
+      value: monthlyHours > 0 ? monthlyHours.toFixed(2) : '0',
       subtitle: 'hours',
       variant: 'primary',
     },
@@ -174,7 +174,7 @@ export function computeSessionStats(sessions: SessionMetadata[]): StatCardData[]
     },
     {
       label: 'Time This Month',
-      value: totalHours > 0 ? totalHours.toFixed(1) : '0',
+      value: totalHours > 0 ? totalHours.toFixed(2) : '0',
       subtitle: 'hrs',
       variant: 'primary',
     },

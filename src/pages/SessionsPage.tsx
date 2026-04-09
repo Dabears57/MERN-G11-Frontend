@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard.tsx';
 import SessionLogItem from '../components/SessionLogItem.tsx';
 import Button from '../components/Button.tsx';
@@ -9,8 +9,8 @@ import { saveSessionMeta, clearSessionMeta, formatElapsed } from '../hooks/useAc
 import { useActiveSessionContext } from '../contexts/ActiveSessionContext.tsx';
 import { listSessions } from '../api/queries.ts';
 import { fetchProjects } from '../api/projects.ts';
-import { fetchTasksForProject, createTask } from '../api/tasks.ts';
-import { fetchNotesFor, createNote, deleteNote } from '../api/notes.ts';
+import { fetchTasksForProject, createTask, updateTask } from '../api/tasks.ts';
+import { fetchNotesFor, createNote, updateNote, deleteNote } from '../api/notes.ts';
 import {
   createSession,
   startSession,
@@ -36,9 +36,9 @@ type SessionMode = 'list' | 'focus';
 export default function SessionsPage() {
   const { refresh: refreshActiveSession } = useActiveSessionContext();
   const { elapsed, isRunning, formattedTime, start, pause, reset, syncElapsed } = useTimer();
+  const navigate = useNavigate();
   const location = useLocation();
   const autoStartProjectId = (location.state as { projectId?: string } | null)?.projectId ?? null;
-  const autoStartHandled = useRef(false);
 
   // ── list-view state ───────────────────────────────────────────────────────
   const [mode,             setMode]             = useState<SessionMode>('list');
@@ -85,6 +85,17 @@ export default function SessionsPage() {
     | null
   >(null);
 
+  // ── note editing ──────────────────────────────────────────────────────────
+  const [editingNote, setEditingNote] = useState<{ noteId: string; taskId?: string; content: string } | null>(null);
+  const [editSaving,  setEditSaving]  = useState(false);
+
+  // ── task editing ──────────────────────────────────────────────────────────
+  const [editingTask,     setEditingTask]     = useState<{ taskId: string; name: string; description: string } | null>(null);
+  const [taskEditSaving,  setTaskEditSaving]  = useState(false);
+
+  // ── end session confirmation ──────────────────────────────────────────────
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+
   // ── summary ───────────────────────────────────────────────────────────────
   const [showSummary,    setShowSummary]    = useState(false);
   const [summaryElapsed, setSummaryElapsed] = useState(0);
@@ -106,12 +117,19 @@ export default function SessionsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    // Capture and clear navigation state synchronously before any async work.
+    // location.state persists across page refreshes (it lives in the browser's
+    // history entry), so we replace it immediately to prevent re-triggering
+    // auto-start on refresh.
+    const projectIdToStart = autoStartProjectId;
+    if (projectIdToStart) {
+      navigate('/sessions', { replace: true, state: null });
+    }
+
     loadSessions();
     loadProjects().then((loadedProjects) => {
-      if (autoStartProjectId && !autoStartHandled.current) {
-        autoStartHandled.current = true;
-        // Navigate intent: always start fresh for the requested project
-        beginSessionFor(autoStartProjectId, loadedProjects);
+      if (projectIdToStart) {
+        beginSessionFor(projectIdToStart, loadedProjects);
       } else {
         checkActiveSession();
       }
@@ -214,7 +232,12 @@ export default function SessionsPage() {
     start();
   }
 
-  async function handleEndSession() {
+  function handleEndSession() {
+    setShowEndConfirm(true);
+  }
+
+  async function handleConfirmEndSession() {
+    setShowEndConfirm(false);
     pause();
     if (activeTaskId) stopTaskTimerLocally(activeTaskId);
     const finalElapsed = elapsed;
@@ -384,6 +407,43 @@ export default function SessionsPage() {
       setTaskNotes((prev) => ({ ...prev, [taskId]: (prev[taskId] ?? []).filter((n) => n._id !== noteId) }));
     }
     setPendingNoteDelete(null);
+  }
+
+  async function handleSaveTaskEdit() {
+    if (!editingTask?.name.trim()) return;
+    setTaskEditSaving(true);
+    const { error } = await updateTask(editingTask.taskId, {
+      name: editingTask.name.trim(),
+      description: editingTask.description.trim(),
+    });
+    if (!error) {
+      setTasks((prev) => prev.map((t) =>
+        t._id === editingTask.taskId
+          ? { ...t, name: editingTask.name.trim(), description: editingTask.description.trim() }
+          : t
+      ));
+      setEditingTask(null);
+    }
+    setTaskEditSaving(false);
+  }
+
+  async function handleSaveNoteEdit() {
+    if (!editingNote?.content.trim()) return;
+    setEditSaving(true);
+    const { noteId, taskId, content } = editingNote;
+    const { error } = await updateNote(noteId, content.trim());
+    if (!error) {
+      if (taskId) {
+        setTaskNotes((prev) => ({
+          ...prev,
+          [taskId]: (prev[taskId] ?? []).map((n) => n._id === noteId ? { ...n, content: content.trim() } : n),
+        }));
+      } else {
+        setSessionNotes((prev) => prev.map((n) => n._id === noteId ? { ...n, content: content.trim() } : n));
+      }
+      setEditingNote(null);
+    }
+    setEditSaving(false);
   }
 
   // ── misc ──────────────────────────────────────────────────────────────────
@@ -705,46 +765,94 @@ export default function SessionsPage() {
                           }`}
                         >
                           {/* Task row */}
-                          <div className="flex items-center justify-between px-3.5 py-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot shrink-0" />}
-                              <div className="min-w-0">
-                                <p className={`font-body text-sm font-medium truncate ${isActive ? 'text-white' : 'text-white/60'}`}>
-                                  {task.name}
-                                </p>
-                                {task.description && (
-                                  <p className="font-body text-xs text-white/25 truncate">{task.description}</p>
-                                )}
+                          <div className="px-3.5 py-3">
+                            {editingTask?.taskId === task._id ? (
+                              <div className="flex flex-col gap-2">
+                                <input
+                                  autoFocus
+                                  value={editingTask.name}
+                                  onChange={(e) => setEditingTask({ ...editingTask, name: e.target.value })}
+                                  placeholder="Task name"
+                                  className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
+                                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                    focus:ring-primary/40 transition-all w-full"
+                                />
+                                <input
+                                  value={editingTask.description}
+                                  onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                                  placeholder="Description (optional)"
+                                  className="bg-white/8 rounded-lg px-3 py-2 font-body text-xs text-white
+                                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                    focus:ring-primary/40 transition-all w-full"
+                                />
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={handleSaveTaskEdit}
+                                    disabled={!editingTask.name.trim() || taskEditSaving}
+                                    className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                                      bg-primary text-white hover:bg-primary-container transition-all
+                                      disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    {taskEditSaving ? 'Saving…' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingTask(null)}
+                                    className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0 ml-3">
-                              <span className="font-body text-xs text-primary/70 tabular-nums">{formatSeconds(taskElapsed)}</span>
-                              <button
-                                onClick={() => toggleTaskNotes(task._id)}
-                                className={`font-body text-xs transition-colors cursor-pointer ${
-                                  isExpanded ? 'text-white/60' : 'text-white/25 hover:text-white/50'
-                                }`}
-                              >
-                                {notes.length > 0 ? `${notes.length}n` : 'Notes'}
-                              </button>
-                              {isActive ? (
-                                <button
-                                  onClick={handleStopTask}
-                                  className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
-                                    bg-white/8 text-white/50 hover:bg-white/14 hover:text-white/80 transition-all"
-                                >
-                                  Stop
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStartTask(task._id)}
-                                  className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
-                                    bg-primary/20 text-primary hover:bg-primary/30 transition-all"
-                                >
-                                  Start
-                                </button>
-                              )}
-                            </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot shrink-0" />}
+                                  <div className="min-w-0">
+                                    <p className={`font-body text-sm font-medium truncate ${isActive ? 'text-white' : 'text-white/60'}`}>
+                                      {task.name}
+                                    </p>
+                                    {task.description && (
+                                      <p className="font-body text-xs text-white/25 truncate">{task.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0 ml-3">
+                                  <span className="font-body text-xs text-primary/70 tabular-nums">{formatSeconds(taskElapsed)}</span>
+                                  <button
+                                    onClick={() => toggleTaskNotes(task._id)}
+                                    className={`font-body text-xs transition-colors cursor-pointer ${
+                                      isExpanded ? 'text-white/60' : 'text-white/25 hover:text-white/50'
+                                    }`}
+                                  >
+                                    Notes
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingTask({ taskId: task._id, name: task.name, description: task.description ?? '' })}
+                                    className="font-body text-xs text-white/25 hover:text-primary transition-colors cursor-pointer"
+                                    aria-label="Edit task"
+                                  >
+                                    Edit
+                                  </button>
+                                  {isActive ? (
+                                    <button
+                                      onClick={handleStopTask}
+                                      className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
+                                        bg-white/8 text-white/50 hover:bg-white/14 hover:text-white/80 transition-all"
+                                    >
+                                      Stop
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleStartTask(task._id)}
+                                      className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
+                                        bg-primary/20 text-primary hover:bg-primary/30 transition-all"
+                                    >
+                                      Start
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Task notes expansion */}
@@ -800,21 +908,65 @@ export default function SessionsPage() {
                                 <p className="font-body text-xs text-white/25">No notes for this task.</p>
                               ) : (
                                 <div className="flex flex-col gap-1.5">
-                                  {notes.map((note) => (
-                                    <div key={note._id} className="bg-white/5 rounded-lg px-2.5 py-2 flex items-start justify-between gap-2">
-                                      <p className="font-body text-xs text-white/60 leading-relaxed whitespace-pre-wrap break-words flex-1 min-w-0">
-                                        {note.content}
-                                      </p>
-                                      <button
-                                        onClick={() => handleDeleteTaskNote(note._id, task._id)}
-                                        className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-0.5 rounded shrink-0 mt-0.5"
-                                        aria-label="Delete note"
-                                      >
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
-                                          <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-                                        </svg>
-                                      </button>
+                                  {[...notes].reverse().map((note) => (
+                                    <div key={note._id} className="bg-white/5 rounded-lg px-2.5 py-2">
+                                      {editingNote?.noteId === note._id ? (
+                                        <div className="flex flex-col gap-1.5">
+                                          <textarea
+                                            autoFocus
+                                            value={editingNote.content}
+                                            onChange={(e) => setEditingNote({ noteId: note._id, taskId: task._id, content: e.target.value })}
+                                            rows={2}
+                                            className="bg-white/8 rounded px-2 py-1.5 font-body text-xs text-white
+                                              placeholder:text-white/25 outline-none ring-1 ring-transparent
+                                              focus:ring-primary/40 transition-all w-full resize-none"
+                                          />
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={handleSaveNoteEdit}
+                                              disabled={!editingNote.content.trim() || editSaving}
+                                              className="rounded px-2.5 py-1 font-body text-[0.65rem] font-semibold cursor-pointer
+                                                bg-primary text-white hover:bg-primary-container transition-all
+                                                disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                              {editSaving ? 'Saving…' : 'Save'}
+                                            </button>
+                                            <button
+                                              onClick={() => setEditingNote(null)}
+                                              className="font-body text-[0.65rem] text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-start justify-between gap-2">
+                                          <p className="font-body text-xs text-white/60 leading-relaxed whitespace-pre-wrap break-words flex-1 min-w-0">
+                                            {note.content}
+                                          </p>
+                                          <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
+                                            <button
+                                              onClick={() => setEditingNote({ noteId: note._id, taskId: task._id, content: note.content })}
+                                              className="text-white/20 hover:text-primary transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              aria-label="Edit note"
+                                            >
+                                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                                              </svg>
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteTaskNote(note._id, task._id)}
+                                              className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              aria-label="Delete note"
+                                            >
+                                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" />
+                                                <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -885,21 +1037,65 @@ export default function SessionsPage() {
                 {/* Note list */}
                 {sessionNotes.length > 0 ? (
                   <div className="flex flex-col gap-2 overflow-y-auto">
-                    {sessionNotes.map((note) => (
-                      <div key={note._id} className="bg-white/5 rounded-xl px-3.5 py-3 flex items-start justify-between gap-2">
-                        <p className="font-body text-sm text-white/70 leading-relaxed whitespace-pre-wrap break-words flex-1 min-w-0">
-                          {note.content}
-                        </p>
-                        <button
-                          onClick={() => handleDeleteNote(note._id)}
-                          className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1 rounded shrink-0 mt-0.5"
-                          aria-label="Delete note"
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
-                            <path d="M9 6V4h6v2" />
-                          </svg>
-                        </button>
+                    {[...sessionNotes].reverse().map((note) => (
+                      <div key={note._id} className="bg-white/5 rounded-xl px-3.5 py-3">
+                        {editingNote?.noteId === note._id ? (
+                          <div className="flex flex-col gap-2">
+                            <textarea
+                              autoFocus
+                              value={editingNote.content}
+                              onChange={(e) => setEditingNote({ noteId: note._id, content: e.target.value })}
+                              rows={3}
+                              className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
+                                placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                focus:ring-primary/40 transition-all w-full resize-none"
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={handleSaveNoteEdit}
+                                disabled={!editingNote.content.trim() || editSaving}
+                                className="rounded-lg px-3 py-1.5 font-body text-xs font-semibold cursor-pointer
+                                  bg-primary text-white hover:bg-primary-container transition-all
+                                  disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {editSaving ? 'Saving…' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => setEditingNote(null)}
+                                className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-body text-sm text-white/70 leading-relaxed whitespace-pre-wrap break-words flex-1 min-w-0">
+                              {note.content}
+                            </p>
+                            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                              <button
+                                onClick={() => setEditingNote({ noteId: note._id, content: note.content })}
+                                className="text-white/20 hover:text-primary transition-colors cursor-pointer p-1 rounded shrink-0"
+                                aria-label="Edit note"
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteNote(note._id)}
+                                className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1 rounded shrink-0"
+                                aria-label="Delete note"
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
+                                  <path d="M9 6V4h6v2" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -986,6 +1182,15 @@ export default function SessionsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={showEndConfirm}
+        title="End Session?"
+        message="Are you sure you want to end this session? Your progress will be saved and the session will be closed."
+        confirmLabel="End Session"
+        onConfirm={handleConfirmEndSession}
+        onCancel={() => setShowEndConfirm(false)}
+      />
 
       <ConfirmDeleteModal
         isOpen={!!pendingNoteDelete}
