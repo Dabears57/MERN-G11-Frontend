@@ -123,6 +123,7 @@ export default function Sidebar() {
           aria-label={name ? `${name} - Account settings` : 'Account settings'}
         >
           <div
+            aria-hidden="true"
             className="w-7 h-7 rounded-full bg-primary flex items-center justify-center
               font-body text-xs font-bold text-white shrink-0"
           >

@@ -16,8 +16,8 @@ import { listSessions, listProjects, listTasks } from '../api/queries.ts';
 import type { SessionMetadata, ProjectMetadata, TaskMetadata } from '../types/index.ts';
 import type { DonutSlice } from '../components/DonutChart.tsx';
 
-const RANKED_COLORS = ['#004d44', '#00897b', '#4db6ac', '#80cbc4', '#b2dfdb'];
-const PROJECT_BADGE_COLORS = ['#004d44', '#00897b', '#0e4675', '#26a69a', '#4db6ac', '#00675b', '#38b2ac', '#80cbc4'];
+const RANKED_COLORS = ['#004d44', '#00675b', '#0e4675', '#2e7d32', '#1565c0'];
+const PROJECT_BADGE_COLORS = ['#004d44', '#00675b', '#0e4675', '#2e7d32', '#1565c0', '#4a148c', '#37474f', '#5d4037'];
 
 export default function InsightsPage() {
   const [sessions, setSessions] = useState<SessionMetadata[]>([]);
