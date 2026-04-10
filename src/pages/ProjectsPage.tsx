@@ -162,10 +162,11 @@ export default function ProjectsPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
+                <label htmlFor="new-project-description" className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
+                  id="new-project-description"
                   placeholder="What is this project about?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

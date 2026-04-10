@@ -713,6 +713,7 @@ export default function SessionsPage() {
                   <form onSubmit={handleAddTaskInFocus} className="mb-3 bg-white/5 rounded-xl px-4 py-3 flex flex-col gap-2.5 shrink-0">
                     <input
                       autoFocus
+                      aria-label="Task name"
                       placeholder="Task name"
                       value={newTaskName}
                       onChange={(e) => setNewTaskName(e.target.value)}
@@ -721,6 +722,7 @@ export default function SessionsPage() {
                         focus:ring-primary/40 transition-all w-full"
                     />
                     <input
+                      aria-label="Task description"
                       placeholder="Description (optional)"
                       value={newTaskDesc}
                       onChange={(e) => setNewTaskDesc(e.target.value)}
@@ -770,6 +772,7 @@ export default function SessionsPage() {
                               <div className="flex flex-col gap-2">
                                 <input
                                   autoFocus
+                                  aria-label="Task name"
                                   value={editingTask.name}
                                   onChange={(e) => setEditingTask({ ...editingTask, name: e.target.value })}
                                   placeholder="Task name"
@@ -778,6 +781,7 @@ export default function SessionsPage() {
                                     focus:ring-primary/40 transition-all w-full"
                                 />
                                 <input
+                                  aria-label="Task description"
                                   value={editingTask.description}
                                   onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
                                   placeholder="Description (optional)"
@@ -845,7 +849,7 @@ export default function SessionsPage() {
                                     <button
                                       onClick={() => handleStartTask(task._id)}
                                       className="rounded-lg px-2.5 py-1 font-body text-xs cursor-pointer
-                                        bg-primary/20 text-primary hover:bg-primary/30 transition-all"
+                                        bg-primary/20 text-primary-light hover:bg-primary/30 transition-all"
                                     >
                                       Start
                                     </button>
@@ -875,6 +879,7 @@ export default function SessionsPage() {
                                 >
                                   <textarea
                                     autoFocus
+                                    aria-label="Task note"
                                     placeholder="Write a note for this task…"
                                     value={taskNoteContent}
                                     onChange={(e) => setTaskNoteContent(e.target.value)}
@@ -914,6 +919,7 @@ export default function SessionsPage() {
                                         <div className="flex flex-col gap-1.5">
                                           <textarea
                                             autoFocus
+                                            aria-label="Edit task note"
                                             value={editingNote.content}
                                             onChange={(e) => setEditingNote({ noteId: note._id, taskId: task._id, content: e.target.value })}
                                             rows={2}
@@ -947,7 +953,7 @@ export default function SessionsPage() {
                                           <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                                             <button
                                               onClick={() => setEditingNote({ noteId: note._id, taskId: task._id, content: note.content })}
-                                              className="text-white/55 hover:text-primary-light transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              className="text-white/55 hover:text-primary-light transition-colors cursor-pointer p-[7px] rounded shrink-0"
                                               aria-label="Edit note"
                                             >
                                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -956,7 +962,7 @@ export default function SessionsPage() {
                                             </button>
                                             <button
                                               onClick={() => handleDeleteTaskNote(note._id, task._id)}
-                                              className="text-white/55 hover:text-red-400 transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              className="text-white/55 hover:text-red-400 transition-colors cursor-pointer p-[7px] rounded shrink-0"
                                               aria-label="Delete note"
                                             >
                                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -1005,6 +1011,7 @@ export default function SessionsPage() {
                   <form onSubmit={handleAddNote} className="mb-3 bg-white/5 rounded-xl px-4 py-3 flex flex-col gap-2.5 shrink-0">
                     <textarea
                       autoFocus
+                      aria-label="Session note"
                       placeholder="Write a note about this session…"
                       value={newNoteContent}
                       onChange={(e) => setNewNoteContent(e.target.value)}
@@ -1043,6 +1050,7 @@ export default function SessionsPage() {
                           <div className="flex flex-col gap-2">
                             <textarea
                               autoFocus
+                              aria-label="Edit session note"
                               value={editingNote.content}
                               onChange={(e) => setEditingNote({ noteId: note._id, content: e.target.value })}
                               rows={3}

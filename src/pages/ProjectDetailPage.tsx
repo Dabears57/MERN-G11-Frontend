@@ -299,6 +299,7 @@ export default function ProjectDetailPage() {
           <form onSubmit={handleAddProjectNote} className="mb-4 bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3">
             <textarea
               autoFocus
+              aria-label="Project note"
               placeholder="Write a note…"
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
@@ -364,10 +365,11 @@ export default function ProjectDetailPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
+                <label htmlFor="edit-project-description" className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
+                  id="edit-project-description"
                   placeholder="What is this project about?"
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
@@ -409,10 +411,11 @@ export default function ProjectDetailPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
+                <label htmlFor="add-task-description" className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
+                  id="add-task-description"
                   placeholder="Optional description"
                   value={taskDesc}
                   onChange={(e) => setTaskDesc(e.target.value)}
@@ -491,6 +494,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
           <div className="flex flex-col gap-2.5">
             <input
               autoFocus
+              aria-label="Task name"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder="Task name"
@@ -499,6 +503,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
                 transition-all duration-200 placeholder:text-on-surface/65 w-full"
             />
             <input
+              aria-label="Task description"
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
               placeholder="Description (optional)"
@@ -581,6 +586,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
             <form onSubmit={handleSubmit} className="mb-3 bg-surface-container rounded-xl p-3 flex flex-col gap-2">
               <textarea
                 autoFocus
+                aria-label="Task note"
                 placeholder="Write a note for this task…"
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
@@ -659,6 +665,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
       <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex flex-col gap-2`}>
         <textarea
           autoFocus
+          aria-label="Edit note"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={compact ? 2 : 3}

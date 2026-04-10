@@ -17,14 +17,17 @@ export default function Input({
   error,
   autoFocus,
 }: InputProps) {
+  const inputId = label ? `input-${label.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}` : undefined;
+
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
+        <label htmlFor={inputId} className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
           {label}
         </label>
       )}
       <input
+        id={inputId}
         type={type}
         placeholder={placeholder}
         value={value}

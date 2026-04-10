@@ -87,11 +87,11 @@ export default function Sidebar() {
       </div>
 
       {/* Divider */}
-      <div className="mx-5 mb-4 h-px bg-white/6" />
+      <div className="mx-5 mb-4 h-px bg-white/10" />
 
       {/* Navigation */}
       <nav className="flex-1 px-3 flex flex-col gap-0.5 overflow-y-auto" role="navigation">
-        <p className="px-3 mb-2 font-body text-[0.625rem] font-semibold tracking-[0.1em] uppercase text-white/45">
+        <p className="px-3 mb-2 font-body text-[0.625rem] font-semibold tracking-[0.1em] uppercase text-white/65">
           Menu
         </p>
         {NAV_LINKS.map(({ to, label, icon }) => (
@@ -101,12 +101,12 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
                 isActive
-                  ? 'bg-primary/25 text-white'
-                  : 'text-white/55 hover:bg-white/6 hover:text-white/85'
+                  ? 'bg-primary-light/15 text-white'
+                  : 'text-white/65 hover:bg-white/8 hover:text-white/90'
               }`
             }
           >
-            <span className="shrink-0">{icon}</span>
+            <span className={`shrink-0 transition-colors duration-150`}>{icon}</span>
             <span className="font-body text-sm font-medium">{label}</span>
           </NavLink>
         ))}
@@ -114,13 +114,13 @@ export default function Sidebar() {
 
       {/* Account */}
       <div className="px-3 pb-5">
-        <div className="h-px bg-white/6 mb-4" />
+        <div className="h-px bg-white/10 mb-4" />
         <button
           onClick={() => navigate('/account')}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-            text-white/55 hover:bg-white/6 hover:text-white/85
+            text-white/65 hover:bg-white/8 hover:text-white/90
             transition-all duration-150 cursor-pointer text-left"
-          aria-label="Account settings"
+          aria-label={name ? `${name} - Account settings` : 'Account settings'}
         >
           <div
             className="w-7 h-7 rounded-full bg-primary flex items-center justify-center

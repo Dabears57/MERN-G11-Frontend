@@ -305,6 +305,7 @@ function NoteForm({ value, saving, onChange, onSubmit, onCancel }: NoteFormProps
     <form onSubmit={onSubmit} className="mt-3 bg-surface-container rounded-xl p-4 flex flex-col gap-3">
       <textarea
         autoFocus
+        aria-label="Note"
         placeholder="Write a note…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -357,6 +358,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
       <div className={`bg-surface-container rounded-xl px-4 ${compact ? 'py-2.5' : 'py-3'} flex flex-col gap-2`}>
         <textarea
           autoFocus
+          aria-label="Edit note"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={compact ? 2 : 3}

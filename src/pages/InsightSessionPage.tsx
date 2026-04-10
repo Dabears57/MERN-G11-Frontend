@@ -204,6 +204,7 @@ export default function InsightSessionPage() {
           <form onSubmit={handleAddNote} className="mb-4 bg-surface-container-low rounded-2xl p-4 flex flex-col gap-3">
             <textarea
               autoFocus
+              aria-label="Session note"
               placeholder="Write a note about this session…"
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
@@ -236,6 +237,7 @@ export default function InsightSessionPage() {
                     <div className="flex flex-col gap-2">
                       <textarea
                         autoFocus
+                        aria-label="Edit session note"
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         rows={3}
