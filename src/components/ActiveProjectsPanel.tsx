@@ -52,7 +52,7 @@ export default function ActiveProjectsPanel({ projects, loading }: ActiveProject
             >
               Choose Project
             </h2>
-            <p className="font-body text-sm text-on-surface/45 mb-5">
+            <p className="font-body text-sm text-on-surface/65 mb-5">
               Select the project for this session
             </p>
 
@@ -96,7 +96,7 @@ export default function ActiveProjectsPanel({ projects, loading }: ActiveProject
           {projects.length > 0 && (
             <button
               onClick={() => navigate('/projects')}
-              className="font-body text-[0.7rem] text-primary/70 hover:text-primary transition-colors cursor-pointer"
+              className="font-body text-[0.7rem] text-primary-light hover:text-white transition-colors cursor-pointer"
             >
               View all
             </button>
@@ -111,10 +111,10 @@ export default function ActiveProjectsPanel({ projects, loading }: ActiveProject
             ))
           ) : projects.length === 0 ? (
             <div className="py-6 text-center">
-              <p className="font-body text-sm text-white/25 leading-relaxed">No projects yet.</p>
+              <p className="font-body text-sm text-white/55 leading-relaxed">No projects yet.</p>
               <button
                 onClick={() => navigate('/projects')}
-                className="mt-3 font-body text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                className="mt-3 font-body text-xs text-primary-light hover:text-white transition-colors cursor-pointer"
               >
                 Create your first →
               </button>
@@ -130,12 +130,12 @@ export default function ActiveProjectsPanel({ projects, loading }: ActiveProject
                   <span className="font-body text-xs font-medium text-white/75 truncate mr-2 group-hover:text-white transition-colors">
                     {project.title}
                   </span>
-                  <span className="font-body text-[0.65rem] text-primary shrink-0 font-semibold">
+                  <span className="font-body text-[0.65rem] text-primary-light shrink-0 font-semibold">
                     {formatHours(project.totalTime)}
                   </span>
                 </div>
                 {project.startDate && (
-                  <p className="font-body text-[0.6rem] text-white/25">
+                  <p className="font-body text-[0.6rem] text-white/55">
                     Started{' '}
                     {new Date(project.startDate).toLocaleDateString('en-US', {
                       month: 'short',

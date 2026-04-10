@@ -35,7 +35,7 @@ export default function HorizontalBars({
 
   if (total === 0) {
     return (
-      <p className="font-body text-sm text-on-surface/30 text-center py-4">
+      <p className="font-body text-sm text-on-surface/65 text-center py-4">
         {emptyMessage}
       </p>
     );
@@ -60,7 +60,7 @@ export default function HorizontalBars({
                 </span>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-3">
-                <span className="font-body text-xs text-on-surface/35">
+                <span className="font-body text-xs text-on-surface/65">
                   {Math.round(pct)}%
                 </span>
                 <span className="font-display text-sm font-bold text-primary">

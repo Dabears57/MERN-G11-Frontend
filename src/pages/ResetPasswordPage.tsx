@@ -49,18 +49,18 @@ export default function ResetPasswordPage() {
         </div>
 
         <div>
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary-light mb-4">
             Account recovery
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
             Choose a new password.
           </h1>
-          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+          <p className="font-body text-base text-white/65 leading-relaxed max-w-xs">
             Pick something strong and you won&apos;t need to do this again.
           </p>
         </div>
 
-        <p className="font-body text-xs text-white/20">
+        <p className="font-body text-xs text-white/55">
           © {new Date().getFullYear()} TimeTrack
         </p>
       </div>
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">New password</h2>
-          <p className="font-body text-sm text-on-surface/40 mb-8">Choose a new password for your account.</p>
+          <p className="font-body text-sm text-on-surface/65 mb-8">Choose a new password for your account.</p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
 
-          <p className="font-body text-sm text-on-surface/40 text-center mt-6">
+          <p className="font-body text-sm text-on-surface/65 text-center mt-6">
             <Link to="/login" className="text-primary font-semibold hover:underline">
               Back to sign in
             </Link>

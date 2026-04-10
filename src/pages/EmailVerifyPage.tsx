@@ -43,18 +43,18 @@ export default function EmailVerifyPage() {
         </div>
 
         <div>
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary-light mb-4">
             Account setup
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
             Verifying your account.
           </h1>
-          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+          <p className="font-body text-base text-white/65 leading-relaxed max-w-xs">
             Just a moment while we confirm your email address.
           </p>
         </div>
 
-        <p className="font-body text-xs text-white/20">
+        <p className="font-body text-xs text-white/55">
           © {new Date().getFullYear()} TimeTrack
         </p>
       </div>
@@ -76,7 +76,7 @@ export default function EmailVerifyPage() {
           {status === 'loading' && (
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-              <p className="font-body text-sm text-on-surface/40">Verifying your email…</p>
+              <p className="font-body text-sm text-on-surface/65">Verifying your email…</p>
             </div>
           )}
 
@@ -89,7 +89,7 @@ export default function EmailVerifyPage() {
               </div>
               <div>
                 <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Email verified!</h2>
-                <p className="font-body text-sm text-on-surface/40">Your account is active. You can now sign in.</p>
+                <p className="font-body text-sm text-on-surface/65">Your account is active. You can now sign in.</p>
               </div>
               <Link to="/login">
                 <Button fullWidth>Go to sign in</Button>
@@ -108,7 +108,7 @@ export default function EmailVerifyPage() {
               </div>
               <div>
                 <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Link expired</h2>
-                <p className="font-body text-sm text-on-surface/40 mb-6">
+                <p className="font-body text-sm text-on-surface/65 mb-6">
                   This verification link is invalid or has expired. Request a new one below.
                 </p>
 
@@ -135,7 +135,7 @@ export default function EmailVerifyPage() {
                   </form>
                 )}
               </div>
-              <p className="font-body text-sm text-on-surface/40 text-center">
+              <p className="font-body text-sm text-on-surface/65 text-center">
                 <Link to="/login" className="text-primary font-semibold hover:underline">
                   Back to sign in
                 </Link>

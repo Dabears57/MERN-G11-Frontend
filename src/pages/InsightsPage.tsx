@@ -107,13 +107,13 @@ export default function InsightsPage() {
     <div className="animate-fade-up">
       {/* Header */}
       <div className="mb-8">
-        <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/60 mb-2">
+        <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary mb-2">
           Analytics
         </p>
         <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">
           Insights
         </h1>
-        <p className="font-body text-sm text-on-surface/40 mt-1.5">
+        <p className="font-body text-sm text-on-surface/65 mt-1.5">
           Patterns and trends across all your tracked work.
         </p>
       </div>
@@ -135,16 +135,16 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 Weekly Activity
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1">Hours tracked per week</p>
+              <p className="font-body text-xs text-on-surface/65 mt-1">Hours tracked per week</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-sm bg-[#4db6ac]" />
-                <span className="font-body text-[0.65rem] text-on-surface/40">Previous</span>
+                <span className="font-body text-[0.65rem] text-on-surface/65">Previous</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-sm bg-primary" />
-                <span className="font-body text-[0.65rem] text-on-surface/40">Current</span>
+                <span className="font-body text-[0.65rem] text-on-surface/65">Current</span>
               </div>
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 Time Split
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">By project</p>
+              <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">By project</p>
               <div className="flex justify-center">
                 <DonutChart
                   slices={projectSlices}
@@ -191,7 +191,7 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 Top Projects
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">Ranked by time</p>
+              <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">Ranked by time</p>
               <div className="flex flex-col gap-4">
                 {sortedProjects.slice(0, 5).map((project, i) => {
                   const pct =
@@ -203,7 +203,7 @@ export default function InsightsPage() {
                     <div key={project._id}>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-body text-[0.6rem] text-on-surface/30 shrink-0 w-4 text-right">
+                          <span className="font-body text-[0.6rem] text-on-surface/65 shrink-0 w-4 text-right">
                             {i + 1}
                           </span>
                           <span className="font-body text-sm text-on-surface/80 truncate">
@@ -242,7 +242,7 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 Top Tasks
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">Ranked by time</p>
+              <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">Ranked by time</p>
               <div className="flex flex-col gap-4">
                 {sortedTasks.slice(0, 5).map((task, i) => {
                   const pct = totalTaskTime > 0 ? (task.totalTime / totalTaskTime) * 100 : 0;
@@ -252,7 +252,7 @@ export default function InsightsPage() {
                     <div key={task._id}>
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-body text-[0.6rem] text-on-surface/30 shrink-0 w-4 text-right">
+                          <span className="font-body text-[0.6rem] text-on-surface/65 shrink-0 w-4 text-right">
                             {i + 1}
                           </span>
                           <div className="flex flex-col min-w-0">
@@ -292,7 +292,7 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 Task Time
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">By task</p>
+              <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">By task</p>
               <div className="flex justify-center">
                 <DonutChart
                   slices={taskSlices}
@@ -320,7 +320,7 @@ export default function InsightsPage() {
               <h2 className="font-display text-lg font-bold text-on-surface leading-none">
                 All Tasks
               </h2>
-              <p className="font-body text-xs text-on-surface/40 mt-1">
+              <p className="font-body text-xs text-on-surface/65 mt-1">
                 {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} across{' '}
                 {uniqueProjectNames.length} {uniqueProjectNames.length === 1 ? 'project' : 'projects'}
               </p>
@@ -362,7 +362,7 @@ export default function InsightsPage() {
                           <span className="font-display text-sm font-bold text-primary shrink-0">
                             {task.totalTime > 0
                               ? formatDuration(task.totalTime)
-                              : <span className="text-on-surface/25 font-body font-normal text-xs">no time</span>}
+                              : <span className="text-on-surface/65 font-body font-normal text-xs">no time</span>}
                           </span>
                         </div>
                         {task.totalTime > 0 && (
@@ -385,7 +385,7 @@ export default function InsightsPage() {
             {tasks.length > visibleTasks && (
               <button
                 onClick={() => setVisibleTasks(v => v + 10)}
-                className="mt-4 w-full font-body text-sm text-on-surface/40 hover:text-primary transition-colors cursor-pointer py-1"
+                className="mt-4 w-full font-body text-sm text-on-surface/65 hover:text-primary transition-colors cursor-pointer py-1"
               >
                 Show more ({tasks.length - visibleTasks} remaining)
               </button>
@@ -415,7 +415,7 @@ export default function InsightsPage() {
             {completedSessions.length > visibleSessions && (
               <button
                 onClick={() => setVisibleSessions(v => v + 10)}
-                className="font-body text-sm text-on-surface/40 hover:text-primary transition-colors cursor-pointer py-2 text-center"
+                className="font-body text-sm text-on-surface/65 hover:text-primary transition-colors cursor-pointer py-2 text-center"
               >
                 Show more ({completedSessions.length - visibleSessions} remaining)
               </button>
@@ -423,7 +423,7 @@ export default function InsightsPage() {
           </div>
         ) : (
           <div className="bg-surface-container-low rounded-2xl p-10 text-center">
-            <p className="font-body text-sm text-on-surface/40">No sessions recorded yet.</p>
+            <p className="font-body text-sm text-on-surface/65">No sessions recorded yet.</p>
           </div>
         )}
       </div>

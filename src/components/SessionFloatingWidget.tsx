@@ -35,7 +35,7 @@ export default function SessionFloatingWidget({ info }: Props) {
         {/* Info */}
         <div className="flex flex-col min-w-0">
           {info.projectName && (
-            <p className="font-body text-[0.65rem] text-white/35 leading-none mb-0.5 truncate max-w-[140px]">
+            <p className="font-body text-[0.65rem] text-white/60 leading-none mb-0.5 truncate max-w-[140px]">
               {info.projectName}
             </p>
           )}
@@ -51,7 +51,7 @@ export default function SessionFloatingWidget({ info }: Props) {
         <button
           onClick={() => navigate('/sessions')}
           className="flex items-center gap-1.5 rounded-xl px-3 py-1.5
-            font-body text-xs font-semibold text-primary
+            font-body text-xs font-semibold text-primary-light
             bg-primary/12 hover:bg-primary/20 transition-all duration-150 cursor-pointer shrink-0"
           aria-label="Return to focus mode"
         >

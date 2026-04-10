@@ -30,7 +30,7 @@ export default function BarChart({
   if (!hasData) {
     return (
       <div
-        className="flex items-center justify-center font-body text-xs text-on-surface/30"
+        className="flex items-center justify-center font-body text-xs text-on-surface/65"
         style={{ height }}
       >
         {emptyMessage}
@@ -57,7 +57,7 @@ export default function BarChart({
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full min-w-0 gap-0.5">
                 {d.value > 0 && animated && (
                   <span
-                    className="font-display font-bold text-on-surface/35"
+                    className="font-display font-bold text-on-surface/65"
                     style={{ fontSize: 8 }}
                   >
                     {d.value.toFixed(2)}
@@ -84,7 +84,7 @@ export default function BarChart({
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center min-w-0">
             <span
-              className="font-body text-on-surface/30 whitespace-nowrap"
+              className="font-body text-on-surface/65 whitespace-nowrap"
               style={{ fontSize: 8 }}
             >
               {d.label}

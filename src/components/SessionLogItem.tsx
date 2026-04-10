@@ -4,7 +4,7 @@ import type { SessionMetadata } from '../types/index.ts';
 const ACCENT_COMBOS = [
   { bg: 'bg-primary/12',    text: 'text-primary' },
   { bg: 'bg-tertiary/12',   text: 'text-tertiary' },
-  { bg: 'bg-surface-container-highest', text: 'text-on-surface/50' },
+  { bg: 'bg-surface-container-highest', text: 'text-on-surface/75' },
 ];
 
 interface SessionLogItemProps {
@@ -70,13 +70,13 @@ export default function SessionLogItem({ session, index, linkable, from }: Sessi
         <p className="font-body text-sm font-semibold text-on-surface truncate leading-snug">
           {session.name}
         </p>
-        <p className="font-body text-xs text-on-surface/40 mt-0.5">{session.projectName}</p>
+        <p className="font-body text-xs text-on-surface/65 mt-0.5">{session.projectName}</p>
       </div>
 
       {/* Duration + time */}
       <div className="text-right shrink-0">
         <p className="font-display text-base font-bold text-primary">{duration}</p>
-        <p className="font-body text-xs text-on-surface/35 mt-0.5">{time}</p>
+        <p className="font-body text-xs text-on-surface/65 mt-0.5">{time}</p>
       </div>
     </div>
   );

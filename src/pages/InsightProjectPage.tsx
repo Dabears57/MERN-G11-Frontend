@@ -90,10 +90,10 @@ export default function InsightProjectPage() {
   if (error || !data) {
     return (
       <div className="animate-fade-up">
-        <Link to="/insights" className="font-body text-sm text-on-surface/50 hover:text-primary mb-4 inline-block">
+        <Link to="/insights" className="font-body text-sm text-on-surface/65 hover:text-primary mb-4 inline-block">
           ← Back to Insights
         </Link>
-        <p className="font-body text-on-surface/50">{error || 'Project not found.'}</p>
+        <p className="font-body text-on-surface/65">{error || 'Project not found.'}</p>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export default function InsightProjectPage() {
 
   return (
     <div className="animate-fade-up">
-      <Link to="/insights" className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/40 hover:text-primary transition-colors mb-6">
+      <Link to="/insights" className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/65 hover:text-primary transition-colors mb-6">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
           <polyline points="15 18 9 12 15 6" />
         </svg>
@@ -129,31 +129,31 @@ export default function InsightProjectPage() {
       </Link>
 
       <div className="mb-7">
-        <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-2">Project Insight</p>
+        <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary mb-2">Project Insight</p>
         <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight">{project.title}</h1>
         {project.description && (
-          <p className="font-body text-sm text-on-surface/50 mt-2 max-w-xl leading-relaxed">{project.description}</p>
+          <p className="font-body text-sm text-on-surface/65 mt-2 max-w-xl leading-relaxed">{project.description}</p>
         )}
       </div>
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Total Time</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Total Time</p>
           <p className="font-display text-2xl font-bold text-primary">{formatSeconds(project.totalTime)}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">tracked</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">tracked</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Sessions</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Sessions</p>
           <p className="font-display text-2xl font-bold text-on-surface">{completedSessions.length}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">completed</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">completed</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Avg Session</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Avg Session</p>
           <p className="font-display text-2xl font-bold text-on-surface">
             {avgSessionSecs > 0 ? formatSeconds(avgSessionSecs) : '—'}
           </p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">per session</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">per session</p>
         </div>
       </div>
 
@@ -163,7 +163,7 @@ export default function InsightProjectPage() {
           {/* Task time donut */}
           <div className="bg-surface-container-low rounded-2xl px-6 py-5">
             <h2 className="font-display text-lg font-bold text-on-surface leading-none">Task Time</h2>
-            <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">Distribution by task</p>
+            <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">Distribution by task</p>
             <div className="flex justify-center">
               <DonutChart
                 slices={taskSlices}
@@ -179,7 +179,7 @@ export default function InsightProjectPage() {
           {/* Session duration bars */}
           <div className="bg-surface-container-low rounded-2xl px-6 py-5">
             <h2 className="font-display text-lg font-bold text-on-surface leading-none">Session Durations</h2>
-            <p className="font-body text-xs text-on-surface/40 mt-1 mb-5">
+            <p className="font-body text-xs text-on-surface/65 mt-1 mb-5">
               Hours per session{completedSessions.length > 12 ? ' (last 12)' : ''}
             </p>
             <BarChart
@@ -207,7 +207,7 @@ export default function InsightProjectPage() {
                     <span className="font-display text-sm font-bold text-primary">{formatSeconds(task.totalTime)}</span>
                   </div>
                   {task.description && (
-                    <p className="font-body text-xs text-on-surface/50 leading-relaxed mb-2">{task.description}</p>
+                    <p className="font-body text-xs text-on-surface/65 leading-relaxed mb-2">{task.description}</p>
                   )}
                   {task.totalTime > 0 && (
                     <div className="h-1 bg-surface-container-highest rounded-full overflow-hidden mt-2 mb-1">
@@ -219,7 +219,7 @@ export default function InsightProjectPage() {
                   )}
                   {taskNotes.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-surface-container-highest flex flex-col gap-1.5">
-                      <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-on-surface/30 mb-1">Notes</p>
+                      <p className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-on-surface/65 mb-1">Notes</p>
                       {taskNotes.map((note) => (
                         <NoteItem key={note._id} note={note} onDelete={handleDeleteNote} onEdit={handleEditNote} compact />
                       ))}
@@ -227,7 +227,7 @@ export default function InsightProjectPage() {
                   )}
                   <button
                     onClick={() => setNoteTarget({ type: 'task', id: task._id })}
-                    className="mt-2 font-body text-xs text-primary/50 hover:text-primary transition-colors cursor-pointer"
+                    className="mt-2 font-body text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
                   >
                     + Add note
                   </button>
@@ -268,7 +268,7 @@ export default function InsightProjectPage() {
 
         {projectNotes.length === 0 ? (
           <div className="bg-surface-container-low rounded-2xl p-8 text-center">
-            <p className="font-body text-sm text-on-surface/35">No notes yet.</p>
+            <p className="font-body text-sm text-on-surface/65">No notes yet.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -311,7 +311,7 @@ function NoteForm({ value, saving, onChange, onSubmit, onCancel }: NoteFormProps
         rows={3}
         className="bg-white rounded-xl px-4 py-3 font-body text-sm text-on-surface
           outline-none ring-2 ring-transparent focus:ring-primary/30
-          transition-all duration-200 placeholder:text-on-surface/30 resize-none w-full"
+          transition-all duration-200 placeholder:text-on-surface/65 resize-none w-full"
       />
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={!value.trim() || saving}>
@@ -376,7 +376,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+            className="font-body text-xs text-on-surface/65 hover:text-on-surface/70 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -391,12 +391,12 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
         <p className={`font-body text-on-surface leading-relaxed whitespace-pre-wrap ${compact ? 'text-xs' : 'text-sm'}`}>
           {note.content}
         </p>
-        <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
+        <p className="font-body text-[0.6rem] text-on-surface/65 mt-1">{date}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0 mt-0.5">
         <button
           onClick={handleStartEdit}
-          className="text-on-surface/25 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          className="text-on-surface/65 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
           aria-label="Edit note"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -405,7 +405,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
         </button>
         <button
           onClick={() => onDelete(note._id)}
-          className="text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          className="text-on-surface/65 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
           aria-label="Delete note"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

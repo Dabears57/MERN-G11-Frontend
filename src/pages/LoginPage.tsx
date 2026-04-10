@@ -61,18 +61,18 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary-light mb-4">
             Focused Work
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
             Welcome back.
           </h1>
-          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+          <p className="font-body text-base text-white/65 leading-relaxed max-w-xs">
             Sign in to continue tracking your projects and sessions.
           </p>
         </div>
 
-        <p className="font-body text-xs text-white/20">
+        <p className="font-body text-xs text-white/55">
           © {new Date().getFullYear()} TimeTrack
         </p>
       </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
           </div>
 
           <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Sign in</h2>
-          <p className="font-body text-sm text-on-surface/40 mb-8">Enter your credentials to continue</p>
+          <p className="font-body text-sm text-on-surface/65 mb-8">Enter your credentials to continue</p>
 
           {passwordUpdated && (
             <div className="bg-green-50 rounded-xl px-4 py-3 mb-5">
@@ -154,7 +154,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="font-body text-sm text-on-surface/40 text-center mt-6">
+          <p className="font-body text-sm text-on-surface/65 text-center mt-6">
             Don&apos;t have an account?{' '}
             <Link to="/register" className="text-primary font-semibold hover:underline">
               Create one

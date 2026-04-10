@@ -60,7 +60,7 @@ export default function DonutChart({
             borderColor: 'var(--color-surface-container-highest)',
           }}
         >
-          <span className="font-body text-xs text-on-surface/30 text-center px-2 leading-snug">
+          <span className="font-body text-xs text-on-surface/65 text-center px-2 leading-snug">
             {emptyMessage}
           </span>
         </div>
@@ -130,7 +130,7 @@ export default function DonutChart({
             )}
             {centerSub && (
               <span
-                className="font-body text-on-surface/40 mt-1"
+                className="font-body text-on-surface/65 mt-1"
                 style={{ fontSize: Math.round(size * 0.08) }}
               >
                 {centerSub}
@@ -150,10 +150,10 @@ export default function DonutChart({
                   className="w-2 h-2 rounded-full shrink-0"
                   style={{ background: seg.color }}
                 />
-                <span className="font-body text-xs text-on-surface/60 truncate flex-1 min-w-0">
+                <span className="font-body text-xs text-on-surface/75 truncate flex-1 min-w-0">
                   {seg.label}
                 </span>
-                <span className="font-display text-xs font-bold text-on-surface/45 shrink-0">
+                <span className="font-display text-xs font-bold text-on-surface/65 shrink-0">
                   {pct}%
                 </span>
               </div>

@@ -182,7 +182,7 @@ export default function ProjectDetailPage() {
       {/* Breadcrumb */}
       <Link
         to="/projects"
-        className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/40
+        className="inline-flex items-center gap-1.5 font-body text-xs text-on-surface/65
           hover:text-primary transition-colors mb-6"
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
@@ -198,7 +198,7 @@ export default function ProjectDetailPage() {
             <h1 className="font-display text-[2.5rem] font-bold text-on-surface leading-tight break-words">{project.title}</h1>
             <button
               onClick={openEditProject}
-              className="shrink-0 text-on-surface/30 hover:text-primary transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-surface-container mt-1"
+              className="shrink-0 text-on-surface/65 hover:text-primary transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-surface-container mt-1"
               aria-label="Edit project"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -207,7 +207,7 @@ export default function ProjectDetailPage() {
             </button>
           </div>
           {project.description && (
-            <p className="font-body text-sm text-on-surface/50 mt-2 leading-relaxed max-w-xl">{project.description}</p>
+            <p className="font-body text-sm text-on-surface/65 mt-2 leading-relaxed max-w-xl">{project.description}</p>
           )}
         </div>
         <div className="shrink-0 pt-2">
@@ -225,19 +225,19 @@ export default function ProjectDetailPage() {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Tasks</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Tasks</p>
           <p className="font-display text-2xl font-bold text-on-surface">{tasks.length}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">total</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">total</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Time Tracked</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Time Tracked</p>
           <p className="font-display text-2xl font-bold text-on-surface">{formatSeconds(project.totalTime)}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">across all sessions</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">across all sessions</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-2">Sessions</p>
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-2">Sessions</p>
           <p className="font-display text-2xl font-bold text-on-surface">{sessions.length}</p>
-          <p className="font-body text-xs text-on-surface/35 mt-0.5">{formatSeconds(totalSessionTime)} total</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">{formatSeconds(totalSessionTime)} total</p>
         </div>
       </div>
 
@@ -255,12 +255,12 @@ export default function ProjectDetailPage() {
       {tasks.length === 0 ? (
         <div className="bg-surface-container-low rounded-2xl p-10 text-center mb-8">
           <div className="w-10 h-10 rounded-xl bg-surface-container mx-auto mb-3 flex items-center justify-center">
-            <svg className="text-on-surface/20" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <svg className="text-on-surface/40" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <polyline points="9 11 12 14 22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
           </div>
-          <p className="font-body text-sm text-on-surface/40 mb-4">No tasks yet.</p>
+          <p className="font-body text-sm text-on-surface/65 mb-4">No tasks yet.</p>
           <Button size="sm" onClick={() => setShowTaskModal(true)}>Add your first task</Button>
         </div>
       ) : (
@@ -305,7 +305,7 @@ export default function ProjectDetailPage() {
               rows={3}
               className="bg-white rounded-xl px-4 py-3 font-body text-sm text-on-surface
                 outline-none ring-2 ring-transparent focus:ring-primary/30
-                transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+                transition-all duration-200 placeholder:text-on-surface/65 resize-none"
             />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={!noteContent.trim() || noteSaving}>
@@ -318,7 +318,7 @@ export default function ProjectDetailPage() {
 
         {projectNotes.length === 0 && !showNoteForm ? (
           <div className="bg-surface-container-low rounded-2xl p-8 text-center">
-            <p className="font-body text-sm text-on-surface/35">No notes yet. Add a note above.</p>
+            <p className="font-body text-sm text-on-surface/65">No notes yet. Add a note above.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -364,7 +364,7 @@ export default function ProjectDetailPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/50">
+                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
@@ -374,7 +374,7 @@ export default function ProjectDetailPage() {
                   rows={3}
                   className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
                     outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
-                    transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+                    transition-all duration-200 placeholder:text-on-surface/65 resize-none"
                 />
               </div>
               <div className="flex items-center gap-2.5 pt-1">
@@ -409,7 +409,7 @@ export default function ProjectDetailPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/50">
+                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
@@ -419,7 +419,7 @@ export default function ProjectDetailPage() {
                   rows={3}
                   className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
                     outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
-                    transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+                    transition-all duration-200 placeholder:text-on-surface/65 resize-none"
                 />
               </div>
               <div className="flex items-center gap-2.5 pt-1">
@@ -496,7 +496,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
               placeholder="Task name"
               className="bg-white rounded-xl px-4 py-2.5 font-body text-sm font-semibold text-on-surface
                 outline-none ring-2 ring-transparent focus:ring-primary/30
-                transition-all duration-200 placeholder:text-on-surface/30 w-full"
+                transition-all duration-200 placeholder:text-on-surface/65 w-full"
             />
             <input
               value={editDesc}
@@ -504,7 +504,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
               placeholder="Description (optional)"
               className="bg-surface-container rounded-xl px-4 py-2.5 font-body text-xs text-on-surface
                 outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
-                transition-all duration-200 placeholder:text-on-surface/30 w-full"
+                transition-all duration-200 placeholder:text-on-surface/65 w-full"
             />
             <div className="flex gap-2">
               <button
@@ -518,7 +518,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+                className="font-body text-xs text-on-surface/65 hover:text-on-surface/70 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -531,30 +531,30 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
               <div className="min-w-0">
                 <h3 className="font-body text-sm font-semibold text-on-surface truncate">{task.name}</h3>
                 {task.description && (
-                  <p className="font-body text-xs text-on-surface/50 mt-0.5 leading-relaxed">{task.description}</p>
+                  <p className="font-body text-xs text-on-surface/65 mt-0.5 leading-relaxed">{task.description}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <span className="font-body text-xs text-on-surface/35">
+              <span className="font-body text-xs text-on-surface/65">
                 {formatDuration(task.totalTime)}
               </span>
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+                className="font-body text-xs text-primary hover:text-primary transition-colors cursor-pointer"
               >
                 Notes
               </button>
               <button
                 onClick={handleStartEdit}
-                className="font-body text-xs text-on-surface/40 hover:text-primary transition-colors cursor-pointer"
+                className="font-body text-xs text-on-surface/65 hover:text-primary transition-colors cursor-pointer"
                 aria-label="Edit task"
               >
                 Edit
               </button>
               <button
                 onClick={() => onDelete(task._id)}
-                className="font-body text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
+                className="font-body text-xs text-red-700 hover:text-red-600 transition-colors cursor-pointer"
               >
                 Delete
               </button>
@@ -566,12 +566,12 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
       {expanded && (
         <div className="px-5 pb-4 border-t border-surface-container-highest">
           <div className="flex items-center justify-between mt-3 mb-2">
-            <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40">
+            <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65">
               Task Notes
             </p>
             <button
               onClick={() => { setShowNoteForm((v) => !v); setNoteContent(''); }}
-              className="font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+              className="font-body text-xs text-primary hover:text-primary transition-colors cursor-pointer"
             >
               + Add
             </button>
@@ -587,7 +587,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
                 rows={2}
                 className="bg-white rounded-lg px-3 py-2 font-body text-xs text-on-surface
                   outline-none ring-2 ring-transparent focus:ring-primary/30
-                  transition-all duration-200 placeholder:text-on-surface/30 resize-none w-full"
+                  transition-all duration-200 placeholder:text-on-surface/65 resize-none w-full"
               />
               <div className="flex gap-2">
                 <button
@@ -602,7 +602,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
                 <button
                   type="button"
                   onClick={() => { setShowNoteForm(false); setNoteContent(''); }}
-                  className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+                  className="font-body text-xs text-on-surface/65 hover:text-on-surface/70 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -611,7 +611,7 @@ function TaskItem({ task, notes, onDelete, onEdit, onSubmitNote, onDeleteNote, o
           )}
 
           {notes.length === 0 && !showNoteForm ? (
-            <p className="font-body text-xs text-on-surface/30">No notes for this task.</p>
+            <p className="font-body text-xs text-on-surface/65">No notes for this task.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {[...notes].reverse().map((note) => (
@@ -678,7 +678,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="font-body text-xs text-on-surface/40 hover:text-on-surface/70 transition-colors cursor-pointer"
+            className="font-body text-xs text-on-surface/65 hover:text-on-surface/70 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -693,12 +693,12 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
         <p className={`font-body text-on-surface leading-relaxed whitespace-pre-wrap break-words ${compact ? 'text-xs' : 'text-sm'}`}>
           {note.content}
         </p>
-        <p className="font-body text-[0.6rem] text-on-surface/30 mt-1">{date}</p>
+        <p className="font-body text-[0.6rem] text-on-surface/65 mt-1">{date}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0 mt-0.5">
         <button
           onClick={handleStartEdit}
-          className="text-on-surface/25 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          className="text-on-surface/65 hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
           aria-label="Edit note"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -707,7 +707,7 @@ function NoteItem({ note, onDelete, onEdit, compact }: NoteItemProps) {
         </button>
         <button
           onClick={() => onDelete(note._id)}
-          className="text-on-surface/25 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
+          className="text-on-surface/65 hover:text-red-500 transition-colors cursor-pointer p-1 rounded-lg hover:bg-surface-container-highest"
           aria-label="Delete note"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

@@ -470,12 +470,12 @@ export default function SessionsPage() {
               <div className="flex items-center gap-4 min-w-0">
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-primary animate-pulse-dot' : 'bg-on-surface/20'}`} />
-                  <span className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-primary/60">
+                  <span className="font-body text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-primary">
                     {isRunning ? 'Live' : 'Paused'}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-body text-xs text-on-surface/40 leading-none mb-0.5 truncate">
+                  <p className="font-body text-xs text-on-surface/65 leading-none mb-0.5 truncate">
                     {activeProject?.title ?? 'Session'}
                   </p>
                   <p className="font-display text-2xl font-bold text-on-surface tabular-nums leading-none">
@@ -489,7 +489,7 @@ export default function SessionsPage() {
                 <button
                   onClick={isRunning ? handlePauseSession : handleResumeSession}
                   className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-body text-xs font-medium
-                    bg-surface-container text-on-surface/60 hover:bg-surface-container-highest hover:text-on-surface
+                    bg-surface-container text-on-surface/75 hover:bg-surface-container-highest hover:text-on-surface
                     transition-all duration-150 cursor-pointer border border-on-surface/8"
                 >
                   {isRunning ? (
@@ -522,7 +522,7 @@ export default function SessionsPage() {
                 <button
                   onClick={handleEndSession}
                   className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-body text-xs font-medium
-                    text-red-400/70 hover:text-red-500 hover:bg-red-500/8
+                    text-red-600 hover:text-red-700 hover:bg-red-500/8
                     transition-all duration-150 cursor-pointer"
                 >
                   End
@@ -536,7 +536,7 @@ export default function SessionsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Sessions</h1>
-            <p className="font-body text-sm text-on-surface/40 mt-1.5">
+            <p className="font-body text-sm text-on-surface/65 mt-1.5">
               Track your focus time, one session at a time.
             </p>
           </div>
@@ -550,7 +550,7 @@ export default function SessionsPage() {
                   Start Session
                 </Button>
                 {projects.length === 0 && (
-                  <p className="font-body text-xs text-on-surface/35">Create a project first</p>
+                  <p className="font-body text-xs text-on-surface/65">Create a project first</p>
                 )}
               </>
             )}
@@ -568,7 +568,7 @@ export default function SessionsPage() {
         <div className="stagger-2 animate-fade-up">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-bold text-on-surface">Recent Sessions</h2>
-            <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
+            <span className="font-body text-xs text-on-surface/65 uppercase tracking-wide">Last 30 days</span>
           </div>
 
           {loadingSessions ? (
@@ -590,7 +590,7 @@ export default function SessionsPage() {
                   <path d="M9 3h6" /><line x1="12" y1="3" x2="12" y2="5" />
                 </svg>
               </div>
-              <p className="font-body text-sm text-on-surface/40 leading-relaxed">
+              <p className="font-body text-sm text-on-surface/65 leading-relaxed">
                 No sessions recorded yet.<br />Start your first session above.
               </p>
             </div>
@@ -609,11 +609,11 @@ export default function SessionsPage() {
               <p className="font-display text-sm font-bold text-white/80">{activeProject?.title ?? 'Session'}</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-body text-[0.6rem] text-white/25 uppercase tracking-[0.12em]">Focus Mode</span>
+              <span className="font-body text-[0.6rem] text-white/55 uppercase tracking-[0.12em]">Focus Mode</span>
               <button
                 onClick={() => setMode('list')}
                 className="flex items-center gap-1.5 rounded-xl px-3 py-1.5
-                  font-body text-xs text-white/40 hover:text-white/70
+                  font-body text-xs text-white/60 hover:text-white/85
                   bg-white/5 hover:bg-white/10 transition-all duration-150 cursor-pointer"
                 aria-label="Minimize focus mode"
               >
@@ -635,10 +635,10 @@ export default function SessionsPage() {
               {isRunning ? (
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
-                  <span className="font-body text-xs tracking-[0.12em] text-primary uppercase">Live</span>
+                  <span className="font-body text-xs tracking-[0.12em] text-primary-light uppercase">Live</span>
                 </div>
               ) : (
-                <span className="font-body text-xs tracking-[0.12em] text-white/25 uppercase">Paused</span>
+                <span className="font-body text-xs tracking-[0.12em] text-white/60 uppercase">Paused</span>
               )}
             </div>
 
@@ -696,10 +696,10 @@ export default function SessionsPage() {
               <div className="flex flex-col min-h-0 px-6 py-5">
                 {/* Column header */}
                 <div className="flex items-center justify-between mb-4 shrink-0">
-                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/30 font-semibold">Tasks</p>
+                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/60 font-semibold">Tasks</p>
                   <button
                     onClick={() => setShowAddTask((v) => !v)}
-                    className="flex items-center gap-1 font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+                    className="flex items-center gap-1 font-body text-xs text-primary-light hover:text-white transition-colors cursor-pointer"
                   >
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -717,7 +717,7 @@ export default function SessionsPage() {
                       value={newTaskName}
                       onChange={(e) => setNewTaskName(e.target.value)}
                       className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
-                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        placeholder:text-white/55 outline-none ring-2 ring-transparent
                         focus:ring-primary/40 transition-all w-full"
                     />
                     <input
@@ -725,7 +725,7 @@ export default function SessionsPage() {
                       value={newTaskDesc}
                       onChange={(e) => setNewTaskDesc(e.target.value)}
                       className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
-                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        placeholder:text-white/55 outline-none ring-2 ring-transparent
                         focus:ring-primary/40 transition-all w-full"
                     />
                     <div className="flex items-center gap-2">
@@ -741,7 +741,7 @@ export default function SessionsPage() {
                       <button
                         type="button"
                         onClick={() => { setShowAddTask(false); setNewTaskName(''); setNewTaskDesc(''); }}
-                        className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                        className="font-body text-xs text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -774,7 +774,7 @@ export default function SessionsPage() {
                                   onChange={(e) => setEditingTask({ ...editingTask, name: e.target.value })}
                                   placeholder="Task name"
                                   className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
-                                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                    placeholder:text-white/55 outline-none ring-2 ring-transparent
                                     focus:ring-primary/40 transition-all w-full"
                                 />
                                 <input
@@ -782,7 +782,7 @@ export default function SessionsPage() {
                                   onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
                                   placeholder="Description (optional)"
                                   className="bg-white/8 rounded-lg px-3 py-2 font-body text-xs text-white
-                                    placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                    placeholder:text-white/55 outline-none ring-2 ring-transparent
                                     focus:ring-primary/40 transition-all w-full"
                                 />
                                 <div className="flex items-center gap-2">
@@ -797,7 +797,7 @@ export default function SessionsPage() {
                                   </button>
                                   <button
                                     onClick={() => setEditingTask(null)}
-                                    className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                                    className="font-body text-xs text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                                   >
                                     Cancel
                                   </button>
@@ -812,23 +812,23 @@ export default function SessionsPage() {
                                       {task.name}
                                     </p>
                                     {task.description && (
-                                      <p className="font-body text-xs text-white/25 truncate">{task.description}</p>
+                                      <p className="font-body text-xs text-white/55 truncate">{task.description}</p>
                                     )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0 ml-3">
-                                  <span className="font-body text-xs text-primary/70 tabular-nums">{formatSeconds(taskElapsed)}</span>
+                                  <span className="font-body text-xs text-primary-light tabular-nums">{formatSeconds(taskElapsed)}</span>
                                   <button
                                     onClick={() => toggleTaskNotes(task._id)}
                                     className={`font-body text-xs transition-colors cursor-pointer ${
-                                      isExpanded ? 'text-white/60' : 'text-white/25 hover:text-white/50'
+                                      isExpanded ? 'text-white/60' : 'text-white/55 hover:text-white/50'
                                     }`}
                                   >
                                     Notes
                                   </button>
                                   <button
                                     onClick={() => setEditingTask({ taskId: task._id, name: task.name, description: task.description ?? '' })}
-                                    className="font-body text-xs text-white/25 hover:text-primary transition-colors cursor-pointer"
+                                    className="font-body text-xs text-white/55 hover:text-primary transition-colors cursor-pointer"
                                     aria-label="Edit task"
                                   >
                                     Edit
@@ -859,10 +859,10 @@ export default function SessionsPage() {
                           {isExpanded && (
                             <div className="px-3.5 pb-3 border-t border-white/6 pt-2.5">
                               <div className="flex items-center justify-between mb-2">
-                                <p className="font-body text-[0.6rem] uppercase tracking-[0.1em] text-white/25 font-semibold">Task Notes</p>
+                                <p className="font-body text-[0.6rem] uppercase tracking-[0.1em] text-white/60 font-semibold">Task Notes</p>
                                 <button
                                   onClick={() => { setTaskNoteFormOpen((v) => !v); setTaskNoteContent(''); }}
-                                  className="font-body text-xs text-primary/50 hover:text-primary transition-colors cursor-pointer"
+                                  className="font-body text-xs text-primary-light hover:text-white transition-colors cursor-pointer"
                                 >
                                   + Add
                                 </button>
@@ -880,7 +880,7 @@ export default function SessionsPage() {
                                     onChange={(e) => setTaskNoteContent(e.target.value)}
                                     rows={2}
                                     className="bg-white/8 rounded-md px-2.5 py-1.5 font-body text-xs text-white
-                                      placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                      placeholder:text-white/55 outline-none ring-2 ring-transparent
                                       focus:ring-primary/40 transition-all w-full resize-none"
                                   />
                                   <div className="flex items-center gap-2">
@@ -896,7 +896,7 @@ export default function SessionsPage() {
                                     <button
                                       type="button"
                                       onClick={() => { setTaskNoteFormOpen(false); setTaskNoteContent(''); }}
-                                      className="font-body text-xs text-white/35 hover:text-white/60 transition-colors cursor-pointer"
+                                      className="font-body text-xs text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                                     >
                                       Cancel
                                     </button>
@@ -905,7 +905,7 @@ export default function SessionsPage() {
                               )}
 
                               {notes.length === 0 && !taskNoteFormOpen ? (
-                                <p className="font-body text-xs text-white/25">No notes for this task.</p>
+                                <p className="font-body text-xs text-white/55">No notes for this task.</p>
                               ) : (
                                 <div className="flex flex-col gap-1.5">
                                   {[...notes].reverse().map((note) => (
@@ -918,7 +918,7 @@ export default function SessionsPage() {
                                             onChange={(e) => setEditingNote({ noteId: note._id, taskId: task._id, content: e.target.value })}
                                             rows={2}
                                             className="bg-white/8 rounded px-2 py-1.5 font-body text-xs text-white
-                                              placeholder:text-white/25 outline-none ring-1 ring-transparent
+                                              placeholder:text-white/55 outline-none ring-1 ring-transparent
                                               focus:ring-primary/40 transition-all w-full resize-none"
                                           />
                                           <div className="flex items-center gap-2">
@@ -933,7 +933,7 @@ export default function SessionsPage() {
                                             </button>
                                             <button
                                               onClick={() => setEditingNote(null)}
-                                              className="font-body text-[0.65rem] text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                                              className="font-body text-[0.65rem] text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                                             >
                                               Cancel
                                             </button>
@@ -947,7 +947,7 @@ export default function SessionsPage() {
                                           <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
                                             <button
                                               onClick={() => setEditingNote({ noteId: note._id, taskId: task._id, content: note.content })}
-                                              className="text-white/20 hover:text-primary transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              className="text-white/55 hover:text-primary-light transition-colors cursor-pointer p-0.5 rounded shrink-0"
                                               aria-label="Edit note"
                                             >
                                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -956,7 +956,7 @@ export default function SessionsPage() {
                                             </button>
                                             <button
                                               onClick={() => handleDeleteTaskNote(note._id, task._id)}
-                                              className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-0.5 rounded shrink-0"
+                                              className="text-white/55 hover:text-red-400 transition-colors cursor-pointer p-0.5 rounded shrink-0"
                                               aria-label="Delete note"
                                             >
                                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -979,7 +979,7 @@ export default function SessionsPage() {
                   </div>
                 ) : !showAddTask ? (
                   <div className="bg-white/4 rounded-xl px-4 py-6 text-center">
-                    <p className="font-body text-sm text-white/25">No tasks yet — add one above.</p>
+                    <p className="font-body text-sm text-white/55">No tasks yet — add one above.</p>
                   </div>
                 ) : null}
               </div>
@@ -988,10 +988,10 @@ export default function SessionsPage() {
               <div className="flex flex-col min-h-0 px-6 py-5">
                 {/* Column header */}
                 <div className="flex items-center justify-between mb-4 shrink-0">
-                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/30 font-semibold">Notes</p>
+                  <p className="font-body text-[0.6rem] uppercase tracking-[0.12em] text-white/60 font-semibold">Notes</p>
                   <button
                     onClick={() => setShowNoteForm((v) => !v)}
-                    className="flex items-center gap-1 font-body text-xs text-primary/60 hover:text-primary transition-colors cursor-pointer"
+                    className="flex items-center gap-1 font-body text-xs text-primary-light hover:text-white transition-colors cursor-pointer"
                   >
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -1010,7 +1010,7 @@ export default function SessionsPage() {
                       onChange={(e) => setNewNoteContent(e.target.value)}
                       rows={3}
                       className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
-                        placeholder:text-white/25 outline-none ring-2 ring-transparent
+                        placeholder:text-white/55 outline-none ring-2 ring-transparent
                         focus:ring-primary/40 transition-all w-full resize-none"
                     />
                     <div className="flex items-center gap-2">
@@ -1026,7 +1026,7 @@ export default function SessionsPage() {
                       <button
                         type="button"
                         onClick={() => { setShowNoteForm(false); setNewNoteContent(''); }}
-                        className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                        className="font-body text-xs text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -1047,7 +1047,7 @@ export default function SessionsPage() {
                               onChange={(e) => setEditingNote({ noteId: note._id, content: e.target.value })}
                               rows={3}
                               className="bg-white/8 rounded-lg px-3 py-2 font-body text-sm text-white
-                                placeholder:text-white/25 outline-none ring-2 ring-transparent
+                                placeholder:text-white/55 outline-none ring-2 ring-transparent
                                 focus:ring-primary/40 transition-all w-full resize-none"
                             />
                             <div className="flex items-center gap-2">
@@ -1062,7 +1062,7 @@ export default function SessionsPage() {
                               </button>
                               <button
                                 onClick={() => setEditingNote(null)}
-                                className="font-body text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                                className="font-body text-xs text-white/55 hover:text-white/80 transition-colors cursor-pointer"
                               >
                                 Cancel
                               </button>
@@ -1076,7 +1076,7 @@ export default function SessionsPage() {
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
                               <button
                                 onClick={() => setEditingNote({ noteId: note._id, content: note.content })}
-                                className="text-white/20 hover:text-primary transition-colors cursor-pointer p-1 rounded shrink-0"
+                                className="text-white/55 hover:text-primary-light transition-colors cursor-pointer p-1 rounded shrink-0"
                                 aria-label="Edit note"
                               >
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -1085,7 +1085,7 @@ export default function SessionsPage() {
                               </button>
                               <button
                                 onClick={() => handleDeleteNote(note._id)}
-                                className="text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1 rounded shrink-0"
+                                className="text-white/55 hover:text-red-400 transition-colors cursor-pointer p-1 rounded shrink-0"
                                 aria-label="Delete note"
                               >
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -1101,7 +1101,7 @@ export default function SessionsPage() {
                   </div>
                 ) : !showNoteForm ? (
                   <div className="bg-white/4 rounded-xl px-4 py-6 text-center">
-                    <p className="font-body text-sm text-white/25">No notes yet — jot something down.</p>
+                    <p className="font-body text-sm text-white/55">No notes yet — jot something down.</p>
                   </div>
                 ) : null}
               </div>
@@ -1118,7 +1118,7 @@ export default function SessionsPage() {
           <div className="relative bg-surface/92 backdrop-blur-[24px] rounded-2xl p-7 w-full max-w-sm
             shadow-[0_24px_48px_rgba(26,28,28,0.14)] animate-scale-in">
             <h2 id="picker-title" className="font-display text-xl font-bold text-on-surface mb-1">Choose Project</h2>
-            <p className="font-body text-sm text-on-surface/45 mb-5">Select the project for this session</p>
+            <p className="font-body text-sm text-on-surface/65 mb-5">Select the project for this session</p>
 
             <div className="flex flex-col gap-1.5 mb-6 max-h-60 overflow-y-auto">
               {projects.map((p) => (
@@ -1157,7 +1157,7 @@ export default function SessionsPage() {
 
             <div className="h-px bg-surface-container-highest mb-5" />
 
-            <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-on-surface/40 mb-3">
+            <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-on-surface/65 mb-3">
               Time per task
             </p>
             <div className="flex flex-col gap-2.5 mb-6">
@@ -1174,7 +1174,7 @@ export default function SessionsPage() {
                   ) : null;
                 })
               ) : (
-                <p className="font-body text-sm text-on-surface/35">No tasks were tracked.</p>
+                <p className="font-body text-sm text-on-surface/65">No tasks were tracked.</p>
               )}
             </div>
 

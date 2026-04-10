@@ -29,14 +29,14 @@ export default function ActivityHeatmap({ cells }: ActivityHeatmapProps) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="font-display text-xl font-bold text-on-surface leading-none">Activity</h2>
-          <p className="font-body text-xs text-on-surface/40 mt-1">Last 30 days</p>
+          <p className="font-body text-xs text-on-surface/65 mt-1">Last 30 days</p>
         </div>
         {totalActive > 0 ? (
-          <span className="font-body text-xs text-on-surface/40">
+          <span className="font-body text-xs text-on-surface/65">
             {totalActive} active day{totalActive !== 1 ? 's' : ''}
           </span>
         ) : (
-          <span className="font-body text-xs text-on-surface/30 italic">No sessions recorded</span>
+          <span className="font-body text-xs text-on-surface/65 italic">No sessions recorded</span>
         )}
       </div>
 
@@ -44,7 +44,7 @@ export default function ActivityHeatmap({ cells }: ActivityHeatmapProps) {
         {/* Day-of-week column headers */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {DAY_LABELS.map((d) => (
-            <span key={d} className="text-center font-body text-[0.6rem] font-medium text-on-surface/30 uppercase tracking-wide">
+            <span key={d} className="text-center font-body text-[0.6rem] font-medium text-on-surface/65 uppercase tracking-wide">
               {d.charAt(0)}
             </span>
           ))}
@@ -68,11 +68,11 @@ export default function ActivityHeatmap({ cells }: ActivityHeatmapProps) {
 
         {/* Legend */}
         <div className="flex items-center justify-end gap-1 mt-3">
-          <span className="font-body text-[0.6rem] text-on-surface/25 mr-1">Less</span>
+          <span className="font-body text-[0.6rem] text-on-surface/65 mr-1">Less</span>
           {INTENSITY_BG.map((bg, i) => (
             <div key={i} className={`w-3.5 h-3.5 rounded-sm ${bg}`} title={INTENSITY_TITLE[i]} />
           ))}
-          <span className="font-body text-[0.6rem] text-on-surface/25 ml-1">More</span>
+          <span className="font-body text-[0.6rem] text-on-surface/65 ml-1">More</span>
         </div>
       </div>
     </section>

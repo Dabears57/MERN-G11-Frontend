@@ -17,7 +17,7 @@ export default function AccountPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Account</h1>
-        <p className="font-body text-sm text-on-surface/40 mt-1.5">Your profile and settings</p>
+        <p className="font-body text-sm text-on-surface/65 mt-1.5">Your profile and settings</p>
       </div>
 
       {/* Avatar + name */}
@@ -33,20 +33,20 @@ export default function AccountPage() {
         </div>
         <div>
           <p className="font-display text-base font-bold text-on-surface">{name || 'User'}</p>
-          <p className="font-body text-xs text-on-surface/40 mt-0.5">{email || 'No email'}</p>
+          <p className="font-body text-xs text-on-surface/65 mt-0.5">{email || 'No email'}</p>
         </div>
       </div>
 
       {/* Info fields */}
       <div className="flex flex-col gap-3 mb-8">
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-1">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-1">
             Display Name
           </p>
           <p className="font-body text-sm text-on-surface">{name || '—'}</p>
         </div>
         <div className="bg-surface-container-low rounded-2xl px-5 py-4">
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/40 mb-1">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-on-surface/65 mb-1">
             Email Address
           </p>
           <p className="font-body text-sm text-on-surface">{email || '—'}</p>
@@ -59,8 +59,8 @@ export default function AccountPage() {
       {/* Sign out */}
       <button
         onClick={handleSignOut}
-        className="flex items-center gap-2 font-body text-sm font-medium text-red-600/70
-          hover:text-red-600 transition-colors cursor-pointer"
+        className="flex items-center gap-2 font-body text-sm font-medium text-red-700
+          hover:text-red-700 transition-colors cursor-pointer"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

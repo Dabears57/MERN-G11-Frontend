@@ -83,7 +83,7 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">Projects</h1>
-          <p className="font-body text-sm text-on-surface/40 mt-1">
+          <p className="font-body text-sm text-on-surface/65 mt-1">
             {projects.length > 0
               ? `${projects.length} project${projects.length !== 1 ? 's' : ''}`
               : 'Organize your work into projects'}
@@ -101,7 +101,7 @@ export default function ProjectsPage() {
 
       {error ? (
         <div className="bg-surface-container-low rounded-2xl p-10 text-center">
-          <p className="font-body text-sm text-on-surface/50 mb-4">Unable to load projects — {error}</p>
+          <p className="font-body text-sm text-on-surface/65 mb-4">Unable to load projects — {error}</p>
           <Button size="sm" onClick={load}>Try again</Button>
         </div>
       ) : projects.length === 0 ? (
@@ -112,7 +112,7 @@ export default function ProjectsPage() {
             </svg>
           </div>
           <h2 className="font-display text-xl font-bold text-on-surface mb-2">No projects yet</h2>
-          <p className="font-body text-sm text-on-surface/45 mb-7 max-w-xs mx-auto leading-relaxed">
+          <p className="font-body text-sm text-on-surface/65 mb-7 max-w-xs mx-auto leading-relaxed">
             Create your first project to start tracking your time and tasks.
           </p>
           <Button onClick={() => setShowModal(true)}>
@@ -162,7 +162,7 @@ export default function ProjectsPage() {
                 autoFocus
               />
               <div className="flex flex-col gap-1.5">
-                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/50">
+                <label className="font-body text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-on-surface/65">
                   Description
                 </label>
                 <textarea
@@ -172,7 +172,7 @@ export default function ProjectsPage() {
                   rows={3}
                   className="bg-surface-container-low rounded-xl px-4 py-3 font-body text-sm text-on-surface
                     outline-none ring-2 ring-transparent focus:ring-primary/30 focus:bg-white
-                    transition-all duration-200 placeholder:text-on-surface/30 resize-none"
+                    transition-all duration-200 placeholder:text-on-surface/55 resize-none"
                 />
               </div>
               {saveError && (

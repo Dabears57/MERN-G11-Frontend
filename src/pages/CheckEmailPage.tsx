@@ -35,18 +35,18 @@ export default function CheckEmailPage() {
         </div>
 
         <div>
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary-light mb-4">
             One more step
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
             Almost there.
           </h1>
-          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+          <p className="font-body text-base text-white/65 leading-relaxed max-w-xs">
             Check your inbox to activate your account and start tracking.
           </p>
         </div>
 
-        <p className="font-body text-xs text-white/20">
+        <p className="font-body text-xs text-white/55">
           © {new Date().getFullYear()} TimeTrack
         </p>
       </div>
@@ -74,7 +74,7 @@ export default function CheckEmailPage() {
           </div>
 
           <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Check your inbox</h2>
-          <p className="font-body text-sm text-on-surface/40 mb-8">
+          <p className="font-body text-sm text-on-surface/65 mb-8">
             {email
               ? <>We sent a verification link to <span className="text-on-surface/70 font-medium">{email}</span>.</>
               : 'We sent a verification link to your email address.'}
@@ -103,7 +103,7 @@ export default function CheckEmailPage() {
             </form>
           )}
 
-          <p className="font-body text-sm text-on-surface/40 text-center">
+          <p className="font-body text-sm text-on-surface/65 text-center">
             Already verified?{' '}
             <Link to="/login" className="text-primary font-semibold hover:underline">
               Sign in

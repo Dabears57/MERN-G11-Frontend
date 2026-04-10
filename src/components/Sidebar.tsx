@@ -91,7 +91,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 flex flex-col gap-0.5 overflow-y-auto" role="navigation">
-        <p className="px-3 mb-2 font-body text-[0.625rem] font-semibold tracking-[0.1em] uppercase text-white/20">
+        <p className="px-3 mb-2 font-body text-[0.625rem] font-semibold tracking-[0.1em] uppercase text-white/45">
           Menu
         </p>
         {NAV_LINKS.map(({ to, label, icon }) => (
@@ -101,8 +101,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
                 isActive
-                  ? 'bg-primary/25 text-primary'
-                  : 'text-white/35 hover:bg-white/6 hover:text-white/70'
+                  ? 'bg-primary/25 text-white'
+                  : 'text-white/55 hover:bg-white/6 hover:text-white/85'
               }`
             }
           >
@@ -118,7 +118,7 @@ export default function Sidebar() {
         <button
           onClick={() => navigate('/account')}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-            text-white/35 hover:bg-white/6 hover:text-white/70
+            text-white/55 hover:bg-white/6 hover:text-white/85
             transition-all duration-150 cursor-pointer text-left"
           aria-label="Account settings"
         >

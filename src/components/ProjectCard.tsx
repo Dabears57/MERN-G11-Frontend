@@ -50,27 +50,27 @@ export default function ProjectCard({ project, index = 0, onDelete }: ProjectCar
           </span>
         </div>
 
-        <p className="font-body text-xs text-on-surface/50 mb-4 line-clamp-2 leading-relaxed">
+        <p className="font-body text-xs text-on-surface/65 mb-4 line-clamp-2 leading-relaxed">
           {project.description || 'No description.'}
         </p>
 
         {/* Footer */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-on-surface/35">
+          <div className="flex items-center gap-1.5 text-on-surface/65">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
             </svg>
             <span className="font-body text-[0.7rem]">{formatHours(project.totalTime)} tracked</span>
           </div>
           {project.startDate && (
-            <span className="font-body text-[0.7rem] text-on-surface/35">
+            <span className="font-body text-[0.7rem] text-on-surface/65">
               {new Date(project.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
-              className="font-body text-[0.7rem] text-red-400/50 hover:text-red-500 transition-colors cursor-pointer"
+              className="font-body text-[0.7rem] text-red-700 hover:text-red-600 transition-colors cursor-pointer"
             >
               Delete
             </button>

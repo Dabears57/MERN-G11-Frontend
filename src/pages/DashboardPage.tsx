@@ -47,7 +47,7 @@ export default function DashboardPage() {
         <h1 className="font-display text-[2.75rem] font-bold text-on-surface leading-tight">
           {getGreeting()}{userName ? `, ${userName}` : ''}
         </h1>
-        <p className="font-body text-sm text-on-surface/40 mt-1.5">{todayLabel}</p>
+        <p className="font-body text-sm text-on-surface/65 mt-1.5">{todayLabel}</p>
       </div>
 
       {/* Stat cards */}
@@ -70,7 +70,7 @@ export default function DashboardPage() {
           <div className="stagger-3 animate-fade-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-bold text-on-surface">Recent Sessions</h2>
-              <span className="font-body text-xs text-on-surface/35 uppercase tracking-wide">Last 30 days</span>
+              <span className="font-body text-xs text-on-surface/65 uppercase tracking-wide">Last 30 days</span>
             </div>
 
             {loading ? (
@@ -90,7 +90,7 @@ export default function DashboardPage() {
                     <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" />
                   </svg>
                 </div>
-                <p className="font-body text-sm text-on-surface/40">
+                <p className="font-body text-sm text-on-surface/65">
                   No sessions yet. Start tracking your work time.
                 </p>
               </div>

@@ -46,19 +46,19 @@ function SessionPreviewCard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
-          <span className="font-body text-xs text-primary font-semibold uppercase tracking-wide">Live Session</span>
+          <span className="font-body text-xs text-primary-light font-semibold uppercase tracking-wide">Live Session</span>
         </div>
-        <span className="font-body text-xs text-white/30 tabular-nums">2h 47m total</span>
+        <span className="font-body text-xs text-white/60 tabular-nums">2h 47m total</span>
       </div>
 
       {/* Timer display */}
       <div>
-        <p className="font-body text-[0.6rem] text-white/30 uppercase tracking-widest mb-1">Elapsed</p>
+        <p className="font-body text-[0.6rem] text-white/60 uppercase tracking-widest mb-1">Elapsed</p>
         <p className="font-display text-4xl font-bold text-white leading-none tabular-nums">01h 24m 37s</p>
       </div>
 
       {/* Project label */}
-      <p className="font-body text-sm text-white/35">Website Redesign</p>
+      <p className="font-body text-sm text-white/65">Website Redesign</p>
 
       {/* Divider */}
       <div className="bg-white/8 h-px" />
@@ -78,12 +78,12 @@ function SessionPreviewCard() {
           >
             <div className="flex items-center gap-2">
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.active ? 'bg-primary' : 'bg-white/15'}`} />
-              <span className={`font-body text-sm ${task.active ? 'text-primary font-semibold' : 'text-white/25'}`}>
+              <span className={`font-body text-sm ${task.active ? 'text-primary-light font-semibold' : 'text-white/55'}`}>
                 {task.name}
               </span>
             </div>
             {task.time && (
-              <span className="font-body text-xs text-primary/80 tabular-nums">{task.time}</span>
+              <span className="font-body text-xs text-primary-light tabular-nums">{task.time}</span>
             )}
           </div>
         ))}
@@ -110,7 +110,7 @@ export default function LandingPage() {
             <span className="font-display text-base font-bold text-on-surface tracking-tight">TimeTrack</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link to="/login" className="font-body text-sm text-on-surface/50 hover:text-primary transition-colors">
+            <Link to="/login" className="font-body text-sm text-on-surface/65 hover:text-primary transition-colors">
               Sign In
             </Link>
             <Button size="sm" onClick={() => navigate('/register')}>Get Started</Button>
@@ -130,7 +130,7 @@ export default function LandingPage() {
             Work with<br />
             intention.
           </h1>
-          <p className="font-body text-lg text-on-surface/55 max-w-sm leading-relaxed mb-10">
+          <p className="font-body text-lg text-on-surface/70 max-w-sm leading-relaxed mb-10">
             {/* TODO: Update copy to match your brand voice */}
             A premium productivity workspace for intentional work. Track projects, run focus sessions, and gain clarity on how your time is spent.
           </p>
@@ -168,7 +168,7 @@ export default function LandingPage() {
                   {icon}
                 </div>
                 <h3 className="font-display text-base font-bold text-on-surface">{title}</h3>
-                <p className="font-body text-sm text-on-surface/50 leading-relaxed">{description}</p>
+                <p className="font-body text-sm text-on-surface/65 leading-relaxed">{description}</p>
               </div>
             ))}
           </div>
@@ -182,7 +182,7 @@ export default function LandingPage() {
             {/* TODO: Update with final CTA copy */}
             Ready to take control of your time?
           </h2>
-          <p className="font-body text-base text-on-surface/45 mb-8 leading-relaxed">
+          <p className="font-body text-base text-on-surface/65 mb-8 leading-relaxed">
             Join and start tracking your work sessions today.
           </p>
           <Button onClick={() => navigate('/register')}>Create Free Account</Button>
@@ -192,13 +192,13 @@ export default function LandingPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-surface-container-highest py-6 px-8">
         <div className="max-w-[1320px] mx-auto flex items-center justify-between">
-          <span className="font-body text-xs text-on-surface/30">
+          <span className="font-body text-xs text-on-surface/65">
             {/* TODO: Update with your organization name */}
             © {new Date().getFullYear()} TimeTrack
           </span>
           <div className="flex items-center gap-6">
-            <Link to="/login"    className="font-body text-xs text-on-surface/30 hover:text-primary transition-colors">Sign In</Link>
-            <Link to="/register" className="font-body text-xs text-on-surface/30 hover:text-primary transition-colors">Register</Link>
+            <Link to="/login"    className="font-body text-xs text-on-surface/65 hover:text-primary transition-colors">Sign In</Link>
+            <Link to="/register" className="font-body text-xs text-on-surface/65 hover:text-primary transition-colors">Register</Link>
           </div>
         </div>
       </footer>

@@ -18,7 +18,7 @@ export default function StatCard({ label, value, subtitle, trend, variant = 'def
       )}
 
       <p className={`font-body text-[0.65rem] font-semibold tracking-[0.1em] uppercase mb-3 ${
-        isPrimary ? 'text-white/55' : 'text-on-surface/40'
+        isPrimary ? 'text-white/75' : 'text-on-surface/65'
       }`}>
         {label}
       </p>
@@ -34,14 +34,14 @@ export default function StatCard({ label, value, subtitle, trend, variant = 'def
 
         {subtitle && !isEmpty && (
           <span className={`font-body text-sm mb-0.5 ${
-            isPrimary ? 'text-white/60' : 'text-on-surface/40'
+            isPrimary ? 'text-white/80' : 'text-on-surface/65'
           }`}>
             {subtitle}
           </span>
         )}
 
         {trend && !isEmpty && (
-          <span className={`mb-1 ${isPrimary ? 'text-white/50' : 'text-primary'}`}>
+          <span className={`mb-1 ${isPrimary ? 'text-white/75' : 'text-primary'}`}>
             <svg
               width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -56,7 +56,7 @@ export default function StatCard({ label, value, subtitle, trend, variant = 'def
       </div>
 
       {isEmpty && (
-        <p className={`font-body text-xs mt-1 ${isPrimary ? 'text-white/30' : 'text-on-surface/30'}`}>
+        <p className={`font-body text-xs mt-1 ${isPrimary ? 'text-white/75' : 'text-on-surface/65'}`}>
           No data yet
         </p>
       )}

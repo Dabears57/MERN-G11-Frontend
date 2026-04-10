@@ -60,7 +60,7 @@ export default function ConfirmDeleteModal({
         >
           {title}
         </h2>
-        <p className="font-body text-sm text-on-surface/50 mb-6 text-center leading-relaxed">
+        <p className="font-body text-sm text-on-surface/65 mb-6 text-center leading-relaxed">
           {message}
         </p>
 

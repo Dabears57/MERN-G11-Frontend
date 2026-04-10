@@ -33,18 +33,18 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div>
-          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary/70 mb-4">
+          <p className="font-body text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-primary-light mb-4">
             Account recovery
           </p>
           <h1 className="font-display text-[2.5rem] font-bold text-white leading-tight mb-4">
             Reset your password.
           </h1>
-          <p className="font-body text-base text-white/40 leading-relaxed max-w-xs">
+          <p className="font-body text-base text-white/65 leading-relaxed max-w-xs">
             We&apos;ll send you a link to choose a new password.
           </p>
         </div>
 
-        <p className="font-body text-xs text-white/20">
+        <p className="font-body text-xs text-white/55">
           © {new Date().getFullYear()} TimeTrack
         </p>
       </div>
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
               </div>
               <div>
                 <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Check your inbox</h2>
-                <p className="font-body text-sm text-on-surface/40">
+                <p className="font-body text-sm text-on-surface/65">
                   If that address is registered, you&apos;ll receive a reset link shortly.
                 </p>
               </div>
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <h2 className="font-display text-[1.75rem] font-bold text-on-surface mb-1.5">Forgot password?</h2>
-              <p className="font-body text-sm text-on-surface/40 mb-8">
+              <p className="font-body text-sm text-on-surface/65 mb-8">
                 Enter your email and we&apos;ll send you a reset link.
               </p>
 
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                 </Button>
               </form>
 
-              <p className="font-body text-sm text-on-surface/40 text-center mt-6">
+              <p className="font-body text-sm text-on-surface/65 text-center mt-6">
                 Remember your password?{' '}
                 <Link to="/login" className="text-primary font-semibold hover:underline">
                   Sign in
