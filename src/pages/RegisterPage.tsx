@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createUser } from '../api/auth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
+import PasswordStrengthBar, { isPasswordStrong } from '../components/PasswordStrengthBar.tsx';
 
 export default function RegisterPage() {
   const navigate          = useNavigate();
@@ -18,8 +19,8 @@ export default function RegisterPage() {
     setError('');
 
     if (!firstName.trim())            { setError('First name is required'); return; }
-    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
-    if (password.length < 6)          { setError('Password must be at least 6 characters'); return; }
+    if (password !== confirmPassword)  { setError('Passwords do not match'); return; }
+    if (!isPasswordStrong(password))   { setError('Please choose a stronger password'); return; }
 
     setLoading(true);
     const result = await createUser(email, password, firstName.trim());
@@ -78,7 +79,8 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input label="First Name"       type="text"     placeholder="Your first name"       value={firstName}       onChange={setFirstName} autoFocus />
             <Input label="Email"            type="email"    placeholder="you@example.com"       value={email}           onChange={setEmail} />
-            <Input label="Password"         type="password" placeholder="At least 6 characters" value={password}        onChange={setPassword} />
+            <Input label="Password"         type="password" placeholder="At least 8 characters" value={password}        onChange={setPassword} />
+            <PasswordStrengthBar password={password} />
             <Input label="Confirm Password" type="password" placeholder="Repeat your password"  value={confirmPassword} onChange={setConfirmPassword} />
 
             <div className="bg-secondary-container rounded-xl px-4 py-3">

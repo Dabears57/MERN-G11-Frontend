@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { resetPassword } from '../api/auth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
+import PasswordStrengthBar, { isPasswordStrong } from '../components/PasswordStrengthBar.tsx';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -19,7 +20,7 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError('');
 
-    if (newPassword.length < 6)          { setError('Password must be at least 6 characters'); return; }
+    if (!isPasswordStrong(newPassword))   { setError('Please choose a stronger password'); return; }
     if (newPassword !== confirmPassword)  { setError('Passwords do not match'); return; }
     if (!token || !email)                 { setError('Invalid reset link. Please request a new one.'); return; }
 
@@ -86,11 +87,12 @@ export default function ResetPasswordPage() {
             <Input
               label="New Password"
               type="password"
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               value={newPassword}
               onChange={setNewPassword}
               autoFocus
             />
+            <PasswordStrengthBar password={newPassword} />
             <Input
               label="Confirm Password"
               type="password"
