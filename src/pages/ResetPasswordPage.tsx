@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import BrandMark from '../components/BrandMark.tsx';
 import { resetPassword } from '../api/auth.ts';
 import Input from '../components/Input.tsx';
 import Button from '../components/Button.tsx';
@@ -40,12 +41,7 @@ export default function ResetPasswordPage() {
       {/* Left panel — brand */}
       <div className="hidden lg:flex w-[42%] bg-on-surface flex-col justify-between p-12">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            </svg>
-          </span>
+          <BrandMark />
           <span className="font-display text-base font-bold text-white">TimeTrack</span>
         </div>
 
@@ -71,12 +67,7 @@ export default function ResetPasswordPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <span className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              </svg>
-            </span>
+            <BrandMark />
             <span className="font-display text-base font-bold text-on-surface">TimeTrack</span>
           </div>
 

@@ -1,5 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import Button from '../components/Button.tsx';
+import BrandMark from '../components/BrandMark.tsx';
 
 const FEATURES = [
   {
@@ -101,12 +102,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-10 bg-surface/85 backdrop-blur-[20px]">
         <div className="max-w-[1320px] mx-auto px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-md bg-primary flex items-center justify-center shrink-0">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" />
-                <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              </svg>
-            </span>
+            <BrandMark />
             <span className="font-display text-base font-bold text-on-surface tracking-tight">TimeTrack</span>
           </div>
           <div className="flex items-center gap-6">

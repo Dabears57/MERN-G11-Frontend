@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getUserInitial, getUserName } from '../hooks/useAuth.ts';
+import BrandMark from './BrandMark.tsx';
 
 /* ── Icons ── */
 function GridIcon() {
@@ -69,17 +70,12 @@ export default function Sidebar() {
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className="px-5 pt-6 pb-7">
+      <div className="px-5 pt-3 pb-3">
         <NavLink
           to="/dashboard"
           className="inline-flex items-center gap-2 group"
         >
-          <span className="w-6 h-6 rounded-md bg-primary flex items-center justify-center shrink-0">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <polyline points="12 7 12 12 15 14" stroke="#004d44" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            </svg>
-          </span>
+          <BrandMark size="md" />
           <span className="font-display text-base font-bold text-white tracking-tight leading-none">
             TimeTrack
           </span>
